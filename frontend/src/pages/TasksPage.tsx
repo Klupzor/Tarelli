@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Plus } from 'lucide-react';
+import { Menu, Plus, Search, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCategorias } from '../hooks/useCategorias';
 import { useEtiquetas } from '../hooks/useEtiquetas';
@@ -13,6 +13,7 @@ import { Pagination } from '../components/Pagination';
 import { EstadoCargando, EstadoError, EstadoVacio } from '../components/EstadoCarga';
 import { Button } from '../components/ui/Button';
 import { IconButton } from '../components/ui/IconButton';
+import { Input } from '../components/ui/Input';
 import type { Tarea, TareasFiltro } from '../types';
 import { ApiError } from '../api/client';
 
@@ -96,6 +97,21 @@ export default function TasksPage() {
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-semibold tracking-[-0.01em] text-ink">Mis tareas</h1>
             <p className="tabular text-xs text-ink-3">{meta.total} tareas</p>
+          </div>
+
+          <div className="hidden w-72 shrink-0 md:block">
+            <Input
+              icon={Search}
+              placeholder="Buscar tareas…"
+              value={busquedaInput}
+              onChange={(e) => setBusquedaInput(e.target.value)}
+              aria-label="Buscar tareas"
+              trailing={
+                busquedaInput ? (
+                  <IconButton icon={X} size="sm" aria-label="Limpiar búsqueda" onClick={() => setBusquedaInput('')} />
+                ) : undefined
+              }
+            />
           </div>
 
           <span className="hidden sm:inline-flex">

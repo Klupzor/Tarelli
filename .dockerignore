@@ -1,0 +1,14 @@
+# El build context de backend/Dockerfile y frontend/Dockerfile es la raíz del
+# repositorio, así que este es el único .dockerignore que Docker respeta.
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/.git
+backend/tests
+frontend/src/**/*.test.*
+*.tsbuildinfo

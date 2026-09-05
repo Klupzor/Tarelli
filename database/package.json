@@ -1,0 +1,17 @@
+{
+  "name": "tarelli-database",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Migraciones, seeds y scripts de analítica SQL para Tarelli",
+  "type": "commonjs",
+  "scripts": {
+    "migrate": "node migrate.js",
+    "seed": "node seeds/seed.js",
+    "analytics": "node run-analytics.js"
+  },
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "dotenv": "^16.4.5",
+    "pg": "^8.13.1"
+  }
+}

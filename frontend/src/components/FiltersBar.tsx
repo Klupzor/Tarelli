@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Check, Search, SlidersHorizontal, X } from 'lucide-react';
 import type { Categoria, Etiqueta, Prioridad, TareasFiltro } from '../types';
 import { Input } from './ui/Input';
@@ -34,6 +34,7 @@ const FILTRO_INICIAL: TareasFiltro = { ordenar: 'creado_en', direccion: 'desc', 
 
 export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBusquedaChange, onChange }: Props) {
   const [panelAbierto, setPanelAbierto] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   const estadoActual = filtro.completada === undefined ? '' : String(filtro.completada);
   const etiquetasActivas = filtro.etiquetas ?? [];
@@ -136,7 +137,7 @@ export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBus
                 <motion.span
                   layoutId="filtro-segmento-activo"
                   className="absolute inset-0 rounded-[6px] bg-surface shadow-xs"
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
                 />
               )}
               <span className="relative">{estado.etiqueta}</span>
@@ -194,11 +195,11 @@ export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBus
       <AnimatePresence initial={false}>
         {panelAbierto && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.18 }}
-            className="overflow-hidden md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.18 }}
+            className="md:hidden"
           >
             <div className="flex flex-col gap-2 pt-1">
               <div className="grid grid-cols-2 gap-2">

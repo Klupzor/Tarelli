@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { CalendarDays, Pencil, Trash2 } from 'lucide-react';
 import type { Prioridad, Tarea } from '../types';
 import { Badge } from './ui/Badge';
@@ -43,6 +43,7 @@ function estaVencida(tarea: Tarea): boolean {
 export function TaskItem({ tarea, onCompletar, onEditar, onEliminar }: Props) {
   const [confirmando, setConfirmando] = useState(false);
   const [eliminando, setEliminando] = useState(false);
+  const reducedMotion = useReducedMotion();
   const vencida = estaVencida(tarea);
 
   const etiquetasVisibles = tarea.etiquetas.slice(0, MAX_ETIQUETAS_VISIBLES);
@@ -60,11 +61,11 @@ export function TaskItem({ tarea, onCompletar, onEditar, onEliminar }: Props) {
 
   return (
     <motion.li
-      layout
-      initial={{ opacity: 0, y: 4 }}
+      layout={!reducedMotion}
+      initial={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ duration: 0.18 }}
+      exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.98 }}
+      transition={{ duration: reducedMotion ? 0 : 0.18 }}
       className="group flex items-start gap-3 rounded-card border border-line bg-surface px-4 py-3 transition-colors duration-120 hover:border-line-strong hover:shadow-xs"
     >
       <div className="mt-0.5 shrink-0">

@@ -2,85 +2,77 @@
 
 @theme {
   /* ---- Superficies -------------------------------------------------- */
-  --color-canvas: #fbfbfc;        /* fondo de página */
-  --color-surface: #ffffff;       /* tarjetas, modal, sidebar */
-  --color-surface-2: #f6f6f8;     /* zonas hundidas, hover sutil */
+  --color-canvas: #f4f4f8;         /* base bajo el fondo decorativo */
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f3f7;
+
+  /* ---- Fondo decorativo (manchas del degradado en malla) ------------ */
+  --color-mesh-1: #dcdffb;         /* violeta */
+  --color-mesh-2: #ffe6d2;         /* ámbar cálido */
+  --color-mesh-3: #d6f0e8;         /* verde agua */
 
   /* ---- Bordes ------------------------------------------------------- */
-  --color-line: #ebebf0;          /* borde por defecto */
-  --color-line-strong: #dcdce4;   /* borde en hover / foco pasivo */
+  --color-line: #e7e7ee;
+  --color-line-strong: #d6d6e0;
 
   /* ---- Texto -------------------------------------------------------- */
-  --color-ink: #17171c;           /* títulos y texto principal */
-  --color-ink-2: #62626d;         /* texto secundario (contraste AA) */
-  --color-ink-3: #93939f;         /* SOLO placeholders, iconos y metadatos
-                                     no esenciales: no llega a AA en 14px */
+  --color-ink: #17171c;
+  --color-ink-2: #5c5c68;          /* secundario, cumple AA */
+  --color-ink-3: #8e8e9c;          /* SOLO placeholders, iconos y metadatos
+                                      no esenciales: no llega a AA en 14px */
 
-  /* ---- Marca (único acento) ----------------------------------------- */
+  /* ---- Marca -------------------------------------------------------- */
   --color-brand: #5b5bd6;
   --color-brand-hover: #4b4bc4;
-  --color-brand-soft: #f0f0fc;    /* fondo de chips/estados activos */
-  --color-brand-line: #dddaf8;
+  --color-brand-soft: #eeeefc;
+  --color-brand-line: #dcdcf7;
+
+  /* ---- Tinte de tarjeta por PRIORIDAD (núcleo del rediseño) --------- */
+  --color-tint-alta: #fde9e6;      /* rosa  */
+  --color-edge-alta: #f6cdc7;
+  --color-tint-media: #fdf1dd;     /* ámbar */
+  --color-edge-media: #f2ddb6;
+  --color-tint-baja: #ffffff;      /* neutra: la prioridad baja no grita */
+  --color-edge-baja: #e7e7ee;
+  --color-tint-hecha: #f1f1f5;     /* completada: apagada */
+  --color-edge-hecha: #e3e3ea;
 
   /* ---- Semánticos (badges y estados) -------------------------------- */
   --color-danger: #b42318;
   --color-danger-soft: #fef3f2;
   --color-danger-line: #fecdca;
-
   --color-warn: #b54708;
   --color-warn-soft: #fffaeb;
   --color-warn-line: #fedf89;
-
   --color-ok: #067647;
   --color-ok-soft: #ecfdf3;
   --color-ok-line: #abefc6;
 
-  /* ---- Categorías (paleta rotativa, look macOS) ---------------------- */
-  /* Asignación determinística por hash del id en utils/categoriaColor.ts */
-  --color-cat-amber: #b45309;
-  --color-cat-amber-soft: #fef3e2;
-  --color-cat-amber-line: #fbdca3;
-
-  --color-cat-blue: #1d4ed8;
-  --color-cat-blue-soft: #eaf2fe;
-  --color-cat-blue-line: #c6dcfc;
-
-  --color-cat-green: #15803d;
-  --color-cat-green-soft: #eafbf0;
-  --color-cat-green-line: #bdefd1;
-
-  --color-cat-purple: #6d28d9;
-  --color-cat-purple-soft: #f3f0fe;
-  --color-cat-purple-line: #ded4fa;
-
-  --color-cat-pink: #be185d;
-  --color-cat-pink-soft: #fdf0f6;
-  --color-cat-pink-line: #f7cfe3;
-
-  --color-cat-teal: #0f766e;
-  --color-cat-teal-soft: #eafbfa;
-  --color-cat-teal-line: #bdece8;
-
-  --color-cat-red: #b91c1c;
-  --color-cat-red-soft: #fef1f0;
-  --color-cat-red-line: #f9cdc9;
-
-  --color-cat-slate: #475569;
-  --color-cat-slate-soft: #f1f2f5;
-  --color-cat-slate-line: #dadce2;
+  /* ---- Color de categoría (§6.4): 6 pares determinísticos por hash -- */
+  --color-cat-violeta: #f1eefe;
+  --color-cat-violeta-ink: #6d28d9;
+  --color-cat-ambar: #fdf3df;
+  --color-cat-ambar-ink: #b45309;
+  --color-cat-verde: #eafbf0;
+  --color-cat-verde-ink: #15803d;
+  --color-cat-rosa: #fdeef5;
+  --color-cat-rosa-ink: #be185d;
+  --color-cat-cian: #e9fafa;
+  --color-cat-cian-ink: #0e7490;
+  --color-cat-indigo: #eef1fd;
+  --color-cat-indigo-ink: #4338ca;
 
   /* ---- Radios ------------------------------------------------------- */
-  --radius-field: 8px;            /* inputs, selects, botones */
-  --radius-card: 12px;            /* tarjetas de tarea, paneles */
-  --radius-card-lg: 20px;         /* tarjetas de tarea en grid (look macOS) */
-  --radius-modal: 16px;
+  --radius-field: 10px;
+  --radius-card: 16px;
+  --radius-modal: 20px;
 
-  /* ---- Sombras (muy sutiles, nunca duras) --------------------------- */
+  /* ---- Sombras (suaves, nunca duras) -------------------------------- */
   --shadow-xs: 0 1px 2px 0 rgb(16 24 40 / 0.04);
-  --shadow-sm: 0 1px 3px 0 rgb(16 24 40 / 0.06), 0 1px 2px -1px rgb(16 24 40 / 0.04);
-  --shadow-md: 0 4px 8px -2px rgb(16 24 40 / 0.06), 0 2px 4px -2px rgb(16 24 40 / 0.04);
-  --shadow-lg: 0 12px 16px -4px rgb(16 24 40 / 0.08), 0 4px 6px -2px rgb(16 24 40 / 0.03);
-  --shadow-modal: 0 24px 48px -12px rgb(16 24 40 / 0.18);
+  --shadow-card: 0 1px 2px 0 rgb(16 24 40 / 0.04), 0 8px 24px -12px rgb(16 24 40 / 0.10);
+  --shadow-card-hover: 0 2px 4px 0 rgb(16 24 40 / 0.05), 0 12px 28px -12px rgb(16 24 40 / 0.16);
+  --shadow-chrome: 0 1px 0 0 rgb(16 24 40 / 0.03);
+  --shadow-modal: 0 24px 56px -16px rgb(16 24 40 / 0.24);
 
   /* ---- Tipografía --------------------------------------------------- */
   --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -96,6 +88,7 @@
 html,
 body {
   margin: 0;
+  min-height: 100%;
   background-color: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -105,19 +98,33 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Fondo decorativo: tres manchas radiales fijas. Solo CSS, sin imágenes.
+   Va en un pseudo-elemento fijo para que no se mueva con el scroll ni
+   participe en el layout. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 8% 4%, var(--color-mesh-1) 0%, transparent 60%),
+    radial-gradient(50rem 36rem at 92% 12%, var(--color-mesh-2) 0%, transparent 58%),
+    radial-gradient(56rem 40rem at 60% 96%, var(--color-mesh-3) 0%, transparent 60%);
+  opacity: 0.75;
+}
+
 * {
   box-sizing: border-box;
 }
 
-/* Anillo de foco único para toda la app. Nunca eliminar el outline sin
-   reemplazarlo: se usa :focus-visible para no molestar al ratón. */
+/* Anillo de foco único. Nunca eliminar el outline sin reemplazarlo. */
 :focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
   border-radius: var(--radius-field);
 }
 
-/* Números tabulares en fechas, contadores y paginación. */
 .tabular {
   font-variant-numeric: tabular-nums;
 }

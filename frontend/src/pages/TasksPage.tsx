@@ -15,6 +15,7 @@ import { EstadoCargando, EstadoError, EstadoVacio } from '../components/EstadoCa
 import { Button } from '../components/ui/Button';
 import { IconButton } from '../components/ui/IconButton';
 import { Input } from '../components/ui/Input';
+import { useToast } from '../components/ui/Toast';
 import type { Tarea, TareasFiltro } from '../types';
 import { ApiError } from '../api/client';
 
@@ -22,6 +23,7 @@ const FILTRO_INICIAL: TareasFiltro = { ordenar: 'creado_en', direccion: 'desc', 
 
 export default function TasksPage() {
   const { usuario, logout } = useAuth();
+  const { mostrarToast } = useToast();
   const categoriasState = useCategorias();
   const etiquetasState = useEtiquetas();
 
@@ -55,7 +57,6 @@ export default function TasksPage() {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [tareaEditando, setTareaEditando] = useState<Tarea | null>(null);
-  const [errorAccion, setErrorAccion] = useState<string | null>(null);
 
   function abrirNuevaTarea() {
     setTareaEditando(null);
@@ -79,7 +80,10 @@ export default function TasksPage() {
     try {
       await eliminar(id);
     } catch (err) {
-      setErrorAccion(err instanceof ApiError ? err.message : 'No se pudo eliminar la tarea.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo eliminar la tarea.',
+      });
     }
   }
 
@@ -87,7 +91,10 @@ export default function TasksPage() {
     try {
       await completar(id, completada);
     } catch (err) {
-      setErrorAccion(err instanceof ApiError ? err.message : 'No se pudo actualizar la tarea.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo actualizar la tarea.',
+      });
     }
   }
 
@@ -143,12 +150,6 @@ export default function TasksPage() {
         </header>
 
         <main className="mx-auto w-full max-w-[1120px] flex-1 px-4 py-6 md:px-6">
-          {errorAccion && (
-            <div className="mb-4 rounded-field border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger">
-              {errorAccion}
-            </div>
-          )}
-
           <div className="mb-4">
             <FiltersBar
               filtro={filtro}

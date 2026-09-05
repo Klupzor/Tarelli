@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef } from 'react';
-import type { KeyboardEvent, ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { X } from 'lucide-react';
@@ -16,6 +16,8 @@ interface ModalProps {
   size?: ModalSize;
   id?: string;
   titleId?: string;
+  /** Elemento a enfocar al abrir en lugar del primer campo del panel (p. ej. el título de un formulario). */
+  focoInicialRef?: RefObject<HTMLElement | null>;
 }
 
 const SIZE_STYLES: Record<ModalSize, string> = {
@@ -27,7 +29,17 @@ const SIZE_STYLES: Record<ModalSize, string> = {
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function Modal({ abierto, onCerrar, titulo, children, footer, size = 'md', id, titleId }: ModalProps) {
+export function Modal({
+  abierto,
+  onCerrar,
+  titulo,
+  children,
+  footer,
+  size = 'md',
+  id,
+  titleId,
+  focoInicialRef,
+}: ModalProps) {
   const tituloIdGenerado = useId();
   const tituloId = titleId ?? tituloIdGenerado;
   const panelRef = useRef<HTMLDivElement>(null);
@@ -42,8 +54,8 @@ export function Modal({ abierto, onCerrar, titulo, children, footer, size = 'md'
     document.body.style.overflow = 'hidden';
 
     const frame = requestAnimationFrame(() => {
-      const primerCampo = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
-      primerCampo?.focus();
+      const objetivo = focoInicialRef?.current ?? panelRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      objetivo?.focus();
     });
 
     return () => {
@@ -53,7 +65,7 @@ export function Modal({ abierto, onCerrar, titulo, children, footer, size = 'md'
         disparadorRef.current.focus();
       }
     };
-  }, [abierto]);
+  }, [abierto, focoInicialRef]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {

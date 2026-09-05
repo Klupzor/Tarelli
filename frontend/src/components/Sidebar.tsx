@@ -6,6 +6,8 @@ import type { Categoria, Etiqueta, Usuario } from '../types';
 import { ApiError } from '../api/client';
 import { LogoMark } from './ui/LogoMark';
 import { IconButton } from './ui/IconButton';
+import { ConfirmDialog } from './ui/ConfirmDialog';
+import { useToast } from './ui/Toast';
 
 interface Props {
   categorias: Categoria[];
@@ -46,44 +48,56 @@ function SidebarContenido({
   onLogout,
   onAccionCompletada,
 }: ContenidoProps) {
+  const { mostrarToast } = useToast();
   const [nuevaCategoria, setNuevaCategoria] = useState('');
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [categoriaConfirmando, setCategoriaConfirmando] = useState<Categoria | null>(null);
+  const [eliminandoCategoria, setEliminandoCategoria] = useState(false);
 
   async function crearCategoria(e: FormEvent) {
     e.preventDefault();
     if (!nuevaCategoria.trim()) return;
-    setError(null);
     try {
       await onCrearCategoria(nuevaCategoria.trim());
       setNuevaCategoria('');
       onAccionCompletada();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo crear la categoría.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo crear la categoría.',
+      });
     }
   }
 
   async function crearEtiqueta(e: FormEvent) {
     e.preventDefault();
     if (!nuevaEtiqueta.trim()) return;
-    setError(null);
     try {
       await onCrearEtiqueta(nuevaEtiqueta.trim());
       setNuevaEtiqueta('');
       onAccionCompletada();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo crear la etiqueta.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo crear la etiqueta.',
+      });
     }
   }
 
-  async function eliminarCategoria(id: string, nombre: string) {
-    if (!window.confirm(`¿Eliminar la categoría "${nombre}"? Las tareas quedarán sin categoría.`)) return;
-    setError(null);
+  async function confirmarEliminarCategoria() {
+    if (!categoriaConfirmando) return;
+    setEliminandoCategoria(true);
     try {
-      await onEliminarCategoria(id);
+      await onEliminarCategoria(categoriaConfirmando.id);
+      setCategoriaConfirmando(null);
       onAccionCompletada();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo eliminar la categoría.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo eliminar la categoría.',
+      });
+    } finally {
+      setEliminandoCategoria(false);
     }
   }
 
@@ -95,12 +109,6 @@ function SidebarContenido({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        {error && (
-          <div className="mb-3 rounded-field border border-danger-line bg-danger-soft px-3 py-2 text-[12.5px] text-danger">
-            {error}
-          </div>
-        )}
-
         <section className="mb-6">
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Categorías</h2>
           <ul className="flex flex-col gap-0.5">
@@ -119,7 +127,7 @@ function SidebarContenido({
                   variant="danger"
                   aria-label={`Eliminar categoría ${c.nombre}`}
                   className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
-                  onClick={() => eliminarCategoria(c.id, c.nombre)}
+                  onClick={() => setCategoriaConfirmando(c)}
                 />
               </li>
             ))}
@@ -171,6 +179,17 @@ function SidebarContenido({
         </div>
         <IconButton icon={LogOut} size="sm" aria-label="Cerrar sesión" onClick={onLogout} />
       </div>
+
+      <ConfirmDialog
+        abierto={categoriaConfirmando !== null}
+        titulo="Eliminar categoría"
+        descripcion={`¿Eliminar la categoría "${categoriaConfirmando?.nombre}"? Las tareas quedarán sin categoría.`}
+        textoConfirmar="Eliminar"
+        tono="danger"
+        cargando={eliminandoCategoria}
+        onConfirmar={confirmarEliminarCategoria}
+        onCancelar={() => setCategoriaConfirmando(null)}
+      />
     </>
   );
 }

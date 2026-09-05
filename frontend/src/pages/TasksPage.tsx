@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { Menu, Plus, Search, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCategorias } from '../hooks/useCategorias';
@@ -17,15 +18,32 @@ import { Input } from '../components/ui/Input';
 import type { Tarea, TareasFiltro } from '../types';
 import { ApiError } from '../api/client';
 
+const FILTRO_INICIAL: TareasFiltro = { ordenar: 'creado_en', direccion: 'desc', page: 1, limit: 20 };
+
 export default function TasksPage() {
   const { usuario, logout } = useAuth();
   const categoriasState = useCategorias();
   const etiquetasState = useEtiquetas();
 
-  const [filtro, setFiltro] = useState<TareasFiltro>({ ordenar: 'creado_en', direccion: 'desc', page: 1, limit: 20 });
+  const [filtro, setFiltro] = useState<TareasFiltro>(FILTRO_INICIAL);
   const [busquedaInput, setBusquedaInput] = useState('');
   const busquedaDebounced = useDebouncedValue(busquedaInput, 350);
   const [sidebarAbierta, setSidebarAbierta] = useState(false);
+
+  const hayFiltrosActivos = Boolean(
+    filtro.completada !== undefined ||
+      filtro.prioridad ||
+      filtro.categoria ||
+      filtro.etiquetas?.length ||
+      busquedaInput.trim() ||
+      (filtro.ordenar && filtro.ordenar !== FILTRO_INICIAL.ordenar) ||
+      (filtro.direccion && filtro.direccion !== FILTRO_INICIAL.direccion),
+  );
+
+  function limpiarFiltros() {
+    setBusquedaInput('');
+    setFiltro(FILTRO_INICIAL);
+  }
 
   const filtroConBusqueda: TareasFiltro = {
     ...filtro,
@@ -142,27 +160,30 @@ export default function TasksPage() {
             />
           </div>
 
-          {cargando && <EstadoCargando mensaje="Cargando tareas..." />}
+          {cargando && <EstadoCargando />}
           {!cargando && error && <EstadoError mensaje={error} onReintentar={recargar} />}
           {!cargando && !error && tareas.length === 0 && (
             <EstadoVacio
-              titulo="No hay tareas que coincidan"
-              descripcion="Ajusta los filtros o crea una nueva tarea para empezar."
+              variante={hayFiltrosActivos ? 'con-filtros' : 'sin-filtros'}
+              onCrearTarea={abrirNuevaTarea}
+              onLimpiarFiltros={limpiarFiltros}
             />
           )}
 
           {!cargando && !error && tareas.length > 0 && (
             <>
               <ul className="flex flex-col gap-2">
-                {tareas.map((tarea) => (
-                  <TaskItem
-                    key={tarea.id}
-                    tarea={tarea}
-                    onCompletar={handleCompletar}
-                    onEditar={abrirEdicion}
-                    onEliminar={handleEliminar}
-                  />
-                ))}
+                <AnimatePresence initial={false}>
+                  {tareas.map((tarea) => (
+                    <TaskItem
+                      key={tarea.id}
+                      tarea={tarea}
+                      onCompletar={handleCompletar}
+                      onEditar={abrirEdicion}
+                      onEliminar={handleEliminar}
+                    />
+                  ))}
+                </AnimatePresence>
               </ul>
               <div className="mt-4">
                 <Pagination meta={meta} onCambiarPagina={(page) => setFiltro((f) => ({ ...f, page }))} />

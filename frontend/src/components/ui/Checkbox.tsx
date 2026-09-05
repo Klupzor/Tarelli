@@ -8,11 +8,11 @@ interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'typ
 export function Checkbox({ className = '', checked, ...rest }: CheckboxProps) {
   return (
     <label
-      className={`relative inline-flex h-[18px] w-[18px] shrink-0 cursor-pointer items-center justify-center ${className}`}
+      className={`relative inline-flex h-[20px] w-[20px] shrink-0 cursor-pointer items-center justify-center ${className}`}
     >
       <input type="checkbox" checked={checked} className="peer sr-only" {...rest} />
       <span
-        className="flex h-[18px] w-[18px] items-center justify-center rounded-[6px] border border-line-strong bg-surface transition-colors duration-120 peer-checked:border-brand peer-checked:bg-brand peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand"
+        className="flex h-[20px] w-[20px] items-center justify-center rounded-[7px] border border-line-strong bg-surface transition-colors duration-120 peer-checked:border-brand peer-checked:bg-brand peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand"
         aria-hidden="true"
       >
         <Check

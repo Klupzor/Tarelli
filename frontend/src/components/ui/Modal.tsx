@@ -104,7 +104,7 @@ export function Modal({
           onKeyDown={handleKeyDown}
         >
           <motion.div
-            className="absolute inset-0 bg-ink/20 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-ink/25 backdrop-blur-[3px]"
             variants={{ open: { opacity: 1 }, closed: { opacity: 0 } }}
             transition={{ duration: reducedMotion ? 0 : 0.16 }}
             onClick={onCerrar}
@@ -117,10 +117,10 @@ export function Modal({
             role="dialog"
             aria-modal="true"
             aria-labelledby={tituloId}
-            className={`relative flex max-h-[90vh] w-full flex-col overflow-y-auto rounded-t-modal bg-surface shadow-modal sm:m-4 sm:w-full sm:rounded-modal ${SIZE_STYLES[size]}`}
+            className={`relative flex max-h-[90vh] w-full flex-col overflow-y-auto rounded-t-modal border border-line/70 bg-surface/95 shadow-modal backdrop-blur-xl sm:m-4 sm:w-full sm:rounded-modal ${SIZE_STYLES[size]}`}
             variants={{
               open: { opacity: 1, y: 0, scale: 1 },
-              closed: { opacity: 0, y: reducedMotion ? 0 : 24, scale: reducedMotion ? 1 : 0.98 },
+              closed: { opacity: 0, y: reducedMotion ? 0 : 10, scale: reducedMotion ? 1 : 0.97 },
             }}
             transition={{ duration: reducedMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
           >

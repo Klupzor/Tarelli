@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -14,7 +15,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary: 'bg-brand text-white shadow-xs hover:bg-brand-hover',
-  secondary: 'border border-line bg-surface text-ink hover:bg-surface-2',
+  secondary: 'border border-line bg-surface/70 backdrop-blur text-ink hover:bg-surface-2/80',
   ghost: 'text-ink-2 hover:bg-surface-2',
   danger: 'bg-danger text-white shadow-xs hover:brightness-90',
 };
@@ -24,20 +25,24 @@ const SIZE_STYLES: Record<ButtonSize, string> = {
   md: 'h-9 gap-2 px-4 text-sm',
 };
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  loading = false,
-  icon: Icon,
-  iconRight: IconRight,
-  disabled,
-  type = 'button',
-  className = '',
-  children,
-  ...rest
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = 'primary',
+    size = 'md',
+    loading = false,
+    icon: Icon,
+    iconRight: IconRight,
+    disabled,
+    type = 'button',
+    className = '',
+    children,
+    ...rest
+  },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
@@ -56,4 +61,4 @@ export function Button({
       {!loading && IconRight && <IconRight size={16} strokeWidth={1.75} aria-hidden="true" />}
     </button>
   );
-}
+});

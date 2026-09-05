@@ -4,17 +4,23 @@ import { Skeleton } from './ui/Skeleton';
 
 export function EstadoCargando() {
   return (
-    <ul className="flex flex-col gap-2" aria-busy="true">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <li key={i} className="flex items-start gap-3 rounded-card border border-line bg-surface px-4 py-3">
-          <Skeleton className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded-[6px]" aria-hidden="true" />
-          <div className="min-w-0 flex-1 space-y-2">
-            <Skeleton className="h-3.5 w-2/5 rounded-full" aria-hidden="true" />
+    <ul
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      aria-busy="true"
+    >
+      {Array.from({ length: 8 }).map((_, i) => (
+        <li key={i} className="flex flex-col gap-3 rounded-[20px] border border-line bg-surface p-4">
+          <div className="flex items-start justify-between">
+            <Skeleton className="h-[18px] w-[18px] shrink-0 rounded-[6px]" aria-hidden="true" />
+            <Skeleton className="h-7 w-7 shrink-0 rounded-full" aria-hidden="true" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-4/5 rounded-full" aria-hidden="true" />
             <Skeleton className="h-3 w-3/5 rounded-full" aria-hidden="true" />
-            <div className="flex gap-2">
-              <Skeleton className="h-3 w-16 rounded-full" aria-hidden="true" />
-              <Skeleton className="h-3 w-20 rounded-full" aria-hidden="true" />
-            </div>
+          </div>
+          <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+            <Skeleton className="h-4 w-16 rounded-full" aria-hidden="true" />
+            <Skeleton className="h-4 w-12 rounded-full" aria-hidden="true" />
           </div>
         </li>
       ))}

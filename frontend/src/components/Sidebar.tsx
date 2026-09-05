@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { Folder, LogOut, Plus, Trash2 } from 'lucide-react';
-import type { Categoria, Etiqueta, Usuario } from '../types';
+import { CalendarDays, CheckCircle2, ListChecks, LogOut, Plus, Sun, Trash2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import type { Categoria, Etiqueta, Usuario, VistaRapida } from '../types';
+import type { ConteosTareas } from '../hooks/useConteosTareas';
 import { ApiError } from '../api/client';
+import { obtenerColorCategoria } from '../utils/categoriaColor';
 import { LogoMark } from './ui/LogoMark';
 import { IconButton } from './ui/IconButton';
 import { ConfirmDialog } from './ui/ConfirmDialog';
@@ -19,6 +22,9 @@ interface Props {
   onLogout: () => void;
   abiertoMovil: boolean;
   onCerrarMovil: () => void;
+  vistaActiva: VistaRapida;
+  conteos: ConteosTareas;
+  onSeleccionarVista: (vista: VistaRapida) => void;
 }
 
 function obtenerIniciales(nombre: string): string {
@@ -36,6 +42,38 @@ interface ContenidoProps {
   usuario: Usuario | null;
   onLogout: () => void;
   onAccionCompletada: () => void;
+  vistaActiva: VistaRapida;
+  conteos: ConteosTareas;
+  onSeleccionarVista: (vista: VistaRapida) => void;
+}
+
+interface ItemVistaProps {
+  icon: LucideIcon;
+  etiqueta: string;
+  cantidad?: number;
+  activo: boolean;
+  onClick: () => void;
+}
+
+function ItemVista({ icon: Icon, etiqueta, cantidad, activo, onClick }: ItemVistaProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={activo ? 'page' : undefined}
+      className={`flex h-9 w-full items-center justify-between rounded-field px-2.5 text-sm font-medium transition-colors duration-120 ${
+        activo ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
+      }`}
+    >
+      <span className="flex items-center gap-2">
+        <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+        {etiqueta}
+      </span>
+      {cantidad !== undefined && (
+        <span className={`tabular text-xs ${activo ? 'text-brand' : 'text-ink-3'}`}>{cantidad}</span>
+      )}
+    </button>
+  );
 }
 
 function SidebarContenido({
@@ -47,6 +85,9 @@ function SidebarContenido({
   usuario,
   onLogout,
   onAccionCompletada,
+  vistaActiva,
+  conteos,
+  onSeleccionarVista,
 }: ContenidoProps) {
   const { mostrarToast } = useToast();
   const [nuevaCategoria, setNuevaCategoria] = useState('');
@@ -109,6 +150,36 @@ function SidebarContenido({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
+        <nav className="mb-6 flex flex-col gap-0.5">
+          <ItemVista
+            icon={ListChecks}
+            etiqueta="Tareas"
+            activo={vistaActiva === 'todas'}
+            onClick={() => onSeleccionarVista('todas')}
+          />
+          <ItemVista
+            icon={Sun}
+            etiqueta="Hoy"
+            cantidad={conteos.hoy}
+            activo={vistaActiva === 'hoy'}
+            onClick={() => onSeleccionarVista('hoy')}
+          />
+          <ItemVista
+            icon={CalendarDays}
+            etiqueta="Próximas"
+            cantidad={conteos.proximas}
+            activo={vistaActiva === 'proximas'}
+            onClick={() => onSeleccionarVista('proximas')}
+          />
+          <ItemVista
+            icon={CheckCircle2}
+            etiqueta="Completados"
+            cantidad={conteos.completadas}
+            activo={vistaActiva === 'completadas'}
+            onClick={() => onSeleccionarVista('completadas')}
+          />
+        </nav>
+
         <section className="mb-6">
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Categorías</h2>
           <ul className="flex flex-col gap-0.5">
@@ -118,7 +189,10 @@ function SidebarContenido({
                 className="group flex h-8 items-center justify-between gap-1 rounded-field px-2 hover:bg-surface-2"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <Folder size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" aria-hidden="true" />
+                  <span
+                    className={`h-2 w-2 shrink-0 rounded-full ${obtenerColorCategoria(c.id).punto}`}
+                    aria-hidden="true"
+                  />
                   <span className="truncate text-sm text-ink">{c.nombre}</span>
                 </span>
                 <IconButton

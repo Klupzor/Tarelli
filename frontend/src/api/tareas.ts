@@ -19,6 +19,8 @@ export const tareasApi = {
         prioridad: filtro.prioridad,
         busqueda: filtro.busqueda,
         etiquetas: filtro.etiquetas?.length ? filtro.etiquetas.join(',') : undefined,
+        fecha_vencimiento_desde: filtro.fecha_vencimiento_desde,
+        fecha_vencimiento_hasta: filtro.fecha_vencimiento_hasta,
         ordenar: filtro.ordenar,
         direccion: filtro.direccion,
         page: filtro.page,

@@ -85,6 +85,60 @@
   color-scheme: light;
 }
 
+/* Variante para estilos específicos de oscuro sin duplicar componentes: la
+   resolución de la preferencia 'sistema' ya estampa data-theme en el DOM
+   (ThemeContext), así que un solo selector de atributo basta. */
+@custom-variant oscuro (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-canvas: #0e0f13;
+  --color-surface: #17181f;
+  --color-surface-2: #1e202a;
+
+  --color-mesh-1: #2a2b52;
+  --color-mesh-2: #3a2c1f;
+  --color-mesh-3: #16302b;
+
+  --color-line: #282a35;
+  --color-line-strong: #363948;
+
+  --color-ink: #f2f2f7;
+  --color-ink-2: #a9abba;
+  --color-ink-3: #71748a;
+
+  --color-brand: #8b8bea;
+  --color-brand-hover: #9c9cf0;
+  --color-brand-soft: #24244a;
+  --color-brand-line: #35356b;
+
+  /* Tintes de prioridad: mismas familias de color, escalonadas para fondo oscuro */
+  --color-tint-alta: #3a2027;
+  --color-edge-alta: #5c2f38;
+  --color-tint-media: #382b16;
+  --color-edge-media: #56421f;
+  --color-tint-baja: #1b1d26;
+  --color-edge-baja: #2a2d3a;
+  --color-tint-hecha: #16171d;
+  --color-edge-hecha: #242631;
+
+  --color-danger: #f27a70;
+  --color-danger-soft: #3a1f1c;
+  --color-danger-line: #5e2f29;
+  --color-warn: #e8b04a;
+  --color-warn-soft: #372a14;
+  --color-warn-line: #57431f;
+  --color-ok: #4ec08d;
+  --color-ok-soft: #14301f;
+  --color-ok-line: #245c3d;
+}
+
+/* El fondo decorativo pesa menos en oscuro: a plena opacidad ensucia. */
+:root[data-theme='dark'] body::before {
+  opacity: 0.5;
+}
+
 html {
   margin: 0;
   min-height: 100%;

@@ -31,10 +31,14 @@ function estaVencida(tarea: Tarea, hoy: string): boolean {
 }
 
 function obtenerTinte(tarea: Tarea): { fondo: string; borde: string } {
-  if (tarea.completada) return { fondo: 'bg-tint-hecha/70', borde: 'border-edge-hecha' };
-  if (tarea.prioridad === 'alta') return { fondo: 'bg-tint-alta/72', borde: 'border-edge-alta/80' };
-  if (tarea.prioridad === 'media') return { fondo: 'bg-tint-media/72', borde: 'border-edge-media/80' };
-  return { fondo: 'bg-surface/72', borde: 'border-edge-baja' };
+  if (tarea.completada) return { fondo: 'bg-tint-hecha/70 oscuro:bg-tint-hecha/85', borde: 'border-edge-hecha' };
+  if (tarea.prioridad === 'alta') {
+    return { fondo: 'bg-tint-alta/72 oscuro:bg-tint-alta/85', borde: 'border-edge-alta/80' };
+  }
+  if (tarea.prioridad === 'media') {
+    return { fondo: 'bg-tint-media/72 oscuro:bg-tint-media/85', borde: 'border-edge-media/80' };
+  }
+  return { fondo: 'bg-surface/72 oscuro:bg-surface/85', borde: 'border-edge-baja' };
 }
 
 export function TaskCard({ tarea, onCompletar, onEditar, onEliminar }: Props) {

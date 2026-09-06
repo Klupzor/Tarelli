@@ -13,7 +13,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <span className="text-[15px] font-semibold text-ink">Tarelli</span>
       </div>
 
-      <div className="w-full max-w-[400px] rounded-modal border border-white/60 bg-surface/80 p-8 shadow-modal backdrop-blur-xl">
+      <div className="w-full max-w-[400px] rounded-modal border border-white/60 oscuro:border-white/8 bg-surface/80 p-8 shadow-modal backdrop-blur-xl">
         {children}
       </div>
     </div>

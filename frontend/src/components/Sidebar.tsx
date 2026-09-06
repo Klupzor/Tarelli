@@ -362,7 +362,7 @@ export function Sidebar({ abiertoMovil, onCerrarMovil, ...contenido }: Props) {
 
   return (
     <>
-      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line/70 bg-surface/70 backdrop-blur-xl lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line/70 bg-surface/70 backdrop-blur-xl oscuro:bg-surface/80 lg:flex">
         <SidebarContenido {...contenido} onAccionCompletada={() => {}} />
       </aside>
 

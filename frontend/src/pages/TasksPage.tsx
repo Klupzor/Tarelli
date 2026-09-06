@@ -4,23 +4,100 @@ import { useCategorias } from '../hooks/useCategorias';
 import { useEtiquetas } from '../hooks/useEtiquetas';
 import { useTareas } from '../hooks/useTareas';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { hoyEnZona, sumarDias } from '../utils/fechas';
 import { Sidebar } from '../components/Sidebar';
+import { TopBar } from '../components/TopBar';
 import { FiltersBar } from '../components/FiltersBar';
-import { TaskItem } from '../components/TaskItem';
+import { TaskGrid } from '../components/TaskGrid';
 import { TaskFormModal } from '../components/TaskFormModal';
 import { Pagination } from '../components/Pagination';
 import { EstadoCargando, EstadoError, EstadoVacio } from '../components/EstadoCarga';
-import type { Tarea, TareasFiltro } from '../types';
+import { useToast } from '../components/ui/Toast';
+import type { Tarea, TareasFiltro, VistaRapida } from '../types';
 import { ApiError } from '../api/client';
+
+const FILTRO_INICIAL: TareasFiltro = { ordenar: 'creado_en', direccion: 'desc', page: 1, limit: 20 };
+
+const TITULOS_VISTA: Record<VistaRapida, string> = {
+  todas: 'Mis tareas',
+  hoy: 'Hoy',
+  proximas: 'Próximas',
+  completadas: 'Completadas',
+};
+
+function filtroDeVista(vista: VistaRapida, timezone: string): TareasFiltro {
+  if (vista === 'hoy') {
+    return { ...FILTRO_INICIAL, fecha_vencimiento_hasta: hoyEnZona(timezone) };
+  }
+  if (vista === 'proximas') {
+    return { ...FILTRO_INICIAL, fecha_vencimiento_desde: sumarDias(hoyEnZona(timezone), 1) };
+  }
+  if (vista === 'completadas') {
+    return { ...FILTRO_INICIAL, completada: true };
+  }
+  return FILTRO_INICIAL;
+}
+
+function detectarVista(filtro: TareasFiltro, timezone: string): VistaRapida {
+  if (filtro.categoria || filtro.prioridad || filtro.etiquetas?.length) return 'todas';
+
+  const hoy = hoyEnZona(timezone);
+  const manana = sumarDias(hoy, 1);
+
+  if (filtro.fecha_vencimiento_hasta === hoy && !filtro.fecha_vencimiento_desde) return 'hoy';
+  if (filtro.fecha_vencimiento_desde === manana && !filtro.fecha_vencimiento_hasta) return 'proximas';
+  if (filtro.completada === true) return 'completadas';
+  return 'todas';
+}
 
 export default function TasksPage() {
   const { usuario, logout } = useAuth();
+  const { mostrarToast } = useToast();
   const categoriasState = useCategorias();
   const etiquetasState = useEtiquetas();
+  const timezone = usuario?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const [filtro, setFiltro] = useState<TareasFiltro>({ ordenar: 'creado_en', direccion: 'desc', page: 1, limit: 20 });
+  const [filtro, setFiltro] = useState<TareasFiltro>(FILTRO_INICIAL);
   const [busquedaInput, setBusquedaInput] = useState('');
   const busquedaDebounced = useDebouncedValue(busquedaInput, 350);
+  const [sidebarAbierta, setSidebarAbierta] = useState(false);
+
+  const vistaActiva = detectarVista(filtro, timezone);
+
+  const hayFiltrosActivos = Boolean(
+    filtro.completada !== undefined ||
+      filtro.prioridad ||
+      filtro.categoria ||
+      filtro.etiquetas?.length ||
+      busquedaInput.trim() ||
+      filtro.fecha_vencimiento_desde ||
+      filtro.fecha_vencimiento_hasta ||
+      (filtro.ordenar && filtro.ordenar !== FILTRO_INICIAL.ordenar) ||
+      (filtro.direccion && filtro.direccion !== FILTRO_INICIAL.direccion),
+  );
+
+  function limpiarFiltros() {
+    setBusquedaInput('');
+    setFiltro(FILTRO_INICIAL);
+  }
+
+  function seleccionarVista(vista: VistaRapida) {
+    setBusquedaInput('');
+    setFiltro(filtroDeVista(vista, timezone));
+  }
+
+  function filtrarPorCategoria(id: string) {
+    setBusquedaInput('');
+    setFiltro({ ...FILTRO_INICIAL, categoria: id });
+  }
+
+  function alternarEtiquetaFiltro(id: string) {
+    setFiltro((f) => {
+      const actuales = f.etiquetas ?? [];
+      const nuevas = actuales.includes(id) ? actuales.filter((e) => e !== id) : [...actuales, id];
+      return { ...f, etiquetas: nuevas.length ? nuevas : undefined, page: 1 };
+    });
+  }
 
   const filtroConBusqueda: TareasFiltro = {
     ...filtro,
@@ -32,7 +109,6 @@ export default function TasksPage() {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [tareaEditando, setTareaEditando] = useState<Tarea | null>(null);
-  const [errorAccion, setErrorAccion] = useState<string | null>(null);
 
   function abrirNuevaTarea() {
     setTareaEditando(null);
@@ -56,7 +132,10 @@ export default function TasksPage() {
     try {
       await eliminar(id);
     } catch (err) {
-      setErrorAccion(err instanceof ApiError ? err.message : 'No se pudo eliminar la tarea.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo eliminar la tarea.',
+      });
     }
   }
 
@@ -64,12 +143,15 @@ export default function TasksPage() {
     try {
       await completar(id, completada);
     } catch (err) {
-      setErrorAccion(err instanceof ApiError ? err.message : 'No se pudo actualizar la tarea.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo actualizar la tarea.',
+      });
     }
   }
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
+    <div className="flex min-h-screen">
       <Sidebar
         categorias={categoriasState.categorias}
         etiquetas={etiquetasState.etiquetas}
@@ -79,75 +161,67 @@ export default function TasksPage() {
           await recargar();
         }}
         onCrearEtiqueta={etiquetasState.crear}
+        onFiltrarCategoria={filtrarPorCategoria}
+        onFiltrarEtiqueta={alternarEtiquetaFiltro}
+        categoriaActiva={filtro.categoria}
+        etiquetasActivas={filtro.etiquetas ?? []}
+        usuario={usuario}
+        onLogout={() => logout()}
+        abiertoMovil={sidebarAbierta}
+        onCerrarMovil={() => setSidebarAbierta(false)}
+        vistaActiva={vistaActiva}
+        onSeleccionarVista={seleccionarVista}
       />
 
-      <main className="flex-1 p-4 lg:p-6">
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold text-slate-900">Mis tareas</h1>
-            <p className="text-sm text-slate-500">Hola, {usuario?.nombre}</p>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar
+          tituloVista={TITULOS_VISTA[vistaActiva]}
+          total={meta.total}
+          busquedaInput={busquedaInput}
+          onBusquedaChange={setBusquedaInput}
+          onAbrirMenu={() => setSidebarAbierta(true)}
+          onNuevaTarea={abrirNuevaTarea}
+        />
+
+        <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-6">
+          <div className="mb-4">
+            <FiltersBar
+              filtro={filtro}
+              categorias={categoriasState.categorias}
+              etiquetas={etiquetasState.etiquetas}
+              busquedaInput={busquedaInput}
+              onBusquedaChange={setBusquedaInput}
+              onChange={setFiltro}
+            />
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={abrirNuevaTarea}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-            >
-              + Nueva tarea
-            </button>
-            <button
-              type="button"
-              onClick={() => logout()}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        </header>
 
-        {errorAccion && (
-          <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{errorAccion}</div>
-        )}
+          {cargando && <EstadoCargando />}
+          {!cargando && error && <EstadoError mensaje={error} onReintentar={recargar} />}
+          {!cargando && !error && tareas.length === 0 && (
+            <EstadoVacio
+              variante={hayFiltrosActivos ? 'con-filtros' : 'sin-filtros'}
+              onCrearTarea={abrirNuevaTarea}
+              onLimpiarFiltros={limpiarFiltros}
+            />
+          )}
 
-        <div className="mb-4">
-          <FiltersBar
-            filtro={filtro}
-            categorias={categoriasState.categorias}
-            etiquetas={etiquetasState.etiquetas}
-            busquedaInput={busquedaInput}
-            onBusquedaChange={setBusquedaInput}
-            onChange={setFiltro}
-          />
-        </div>
-
-        {cargando && <EstadoCargando mensaje="Cargando tareas..." />}
-        {!cargando && error && <EstadoError mensaje={error} onReintentar={recargar} />}
-        {!cargando && !error && tareas.length === 0 && (
-          <EstadoVacio
-            titulo="No hay tareas que coincidan"
-            descripcion="Ajusta los filtros o crea una nueva tarea para empezar."
-          />
-        )}
-
-        {!cargando && !error && tareas.length > 0 && (
-          <>
-            <ul className="flex flex-col gap-2">
-              {tareas.map((tarea) => (
-                <TaskItem
-                  key={tarea.id}
-                  tarea={tarea}
-                  onCompletar={handleCompletar}
-                  onEditar={abrirEdicion}
-                  onEliminar={handleEliminar}
-                />
-              ))}
-            </ul>
-            <div className="mt-4">
-              <Pagination meta={meta} onCambiarPagina={(page) => setFiltro((f) => ({ ...f, page }))} />
-            </div>
-          </>
-        )}
-      </main>
+          {!cargando && !error && tareas.length > 0 && (
+            <>
+              <TaskGrid
+                tareas={tareas}
+                meta={meta}
+                onCompletar={handleCompletar}
+                onEditar={abrirEdicion}
+                onEliminar={handleEliminar}
+                onNuevaTarea={abrirNuevaTarea}
+              />
+              <div className="mt-4">
+                <Pagination meta={meta} onCambiarPagina={(page) => setFiltro((f) => ({ ...f, page }))} />
+              </div>
+            </>
+          )}
+        </main>
+      </div>
 
       <TaskFormModal
         abierto={modalAbierto}

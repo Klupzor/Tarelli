@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AlertTriangle, Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { validarEmail, validarNombre, validarPassword } from '../utils/validation';
+import { AuthLayout } from '../components/AuthLayout';
+import { Button } from '../components/ui/Button';
+import { Field } from '../components/ui/Field';
+import { Input } from '../components/ui/Input';
+import { IconButton } from '../components/ui/IconButton';
 
 export default function RegisterPage() {
   const { registrar } = useAuth();
@@ -11,6 +17,7 @@ export default function RegisterPage() {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [errores, setErrores] = useState<{ nombre?: string; email?: string; password?: string }>({});
   const [errorServidor, setErrorServidor] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -38,80 +45,66 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-2xl font-semibold text-slate-900">Crear cuenta</h1>
-        <p className="mb-6 text-sm text-slate-500">Empieza a organizar tus tareas en minutos.</p>
+    <AuthLayout>
+      <h1 className="text-xl font-semibold tracking-[-0.01em] text-ink">Crear cuenta</h1>
+      <p className="mt-1 text-sm text-ink-2">Empieza a organizar tus tareas en minutos.</p>
 
-        {errorServidor && (
-          <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{errorServidor}</div>
-        )}
+      {errorServidor && (
+        <div className="mt-4 flex items-start gap-2 rounded-field border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger">
+          <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
+          <p>{errorServidor}</p>
+        </div>
+      )}
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-          <div>
-            <label htmlFor="nombre" className="mb-1 block text-sm font-medium text-slate-700">
-              Nombre
-            </label>
-            <input
-              id="nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              autoComplete="name"
-            />
-            {errores.nombre && <p className="mt-1 text-xs text-red-600">{errores.nombre}</p>}
-          </div>
+      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
+        <Field label="Nombre" htmlFor="nombre" error={errores.nombre}>
+          <Input icon={User} value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="name" />
+        </Field>
 
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              autoComplete="email"
-            />
-            {errores.email && <p className="mt-1 text-xs text-red-600">{errores.email}</p>}
-          </div>
+        <Field label="Email" htmlFor="email" error={errores.email}>
+          <Input
+            type="email"
+            icon={Mail}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+        </Field>
 
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              autoComplete="new-password"
-            />
-            {errores.password ? (
-              <p className="mt-1 text-xs text-red-600">{errores.password}</p>
-            ) : (
-              <p className="mt-1 text-xs text-slate-400">Mínimo 8 caracteres, con letras y números.</p>
-            )}
-          </div>
+        <Field
+          label="Contraseña"
+          htmlFor="password"
+          error={errores.password}
+          hint={errores.password ? undefined : 'Mínimo 8 caracteres, con letras y números.'}
+        >
+          <Input
+            type={mostrarPassword ? 'text' : 'password'}
+            icon={Lock}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            trailing={
+              <IconButton
+                icon={mostrarPassword ? EyeOff : Eye}
+                size="sm"
+                aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                onClick={() => setMostrarPassword((v) => !v)}
+              />
+            }
+          />
+        </Field>
 
-          <button
-            type="submit"
-            disabled={enviando}
-            className="mt-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
-          >
-            {enviando ? 'Creando cuenta...' : 'Crear cuenta'}
-          </button>
-        </form>
+        <Button type="submit" loading={enviando} className="mt-2 h-10! w-full">
+          Crear cuenta
+        </Button>
+      </form>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
-          ¿Ya tienes cuenta?{' '}
-          <Link to="/login" className="font-medium text-indigo-600 hover:underline">
-            Inicia sesión
-          </Link>
-        </p>
-      </div>
-    </div>
+      <p className="mt-6 text-center text-sm text-ink-2">
+        ¿Ya tienes cuenta?{' '}
+        <Link to="/login" className="font-medium text-brand hover:underline">
+          Inicia sesión
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

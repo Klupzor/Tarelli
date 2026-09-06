@@ -1,7 +1,15 @@
 import { useState } from 'react';
-import type { FormEvent } from 'react';
-import type { Categoria, Etiqueta } from '../types';
+import type { FormEvent, ReactNode } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { CalendarDays, Check, CheckCircle, ChevronRight, Clock, Folder, ListChecks, LogOut, Plus, Tag, Trash2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import type { Categoria, Etiqueta, Usuario, VistaRapida } from '../types';
 import { ApiError } from '../api/client';
+import { colorCategoria, PUNTO_COLOR_CATEGORIA } from '../utils/colorCategoria';
+import { LogoMark } from './ui/LogoMark';
+import { IconButton } from './ui/IconButton';
+import { ConfirmDialog } from './ui/ConfirmDialog';
+import { useToast } from './ui/Toast';
 
 interface Props {
   categorias: Categoria[];
@@ -9,104 +17,395 @@ interface Props {
   onCrearCategoria: (nombre: string) => Promise<unknown>;
   onEliminarCategoria: (id: string) => Promise<void>;
   onCrearEtiqueta: (nombre: string) => Promise<unknown>;
+  onFiltrarCategoria: (id: string) => void;
+  onFiltrarEtiqueta: (id: string) => void;
+  categoriaActiva?: string;
+  etiquetasActivas: string[];
+  usuario: Usuario | null;
+  onLogout: () => void;
+  abiertoMovil: boolean;
+  onCerrarMovil: () => void;
+  vistaActiva: VistaRapida;
+  onSeleccionarVista: (vista: VistaRapida) => void;
 }
 
-export function Sidebar({ categorias, etiquetas, onCrearCategoria, onEliminarCategoria, onCrearEtiqueta }: Props) {
+function obtenerIniciales(nombre: string): string {
+  const partes = nombre.trim().split(/\s+/).slice(0, 2);
+  const iniciales = partes.map((p) => p[0]?.toUpperCase() ?? '').join('');
+  return iniciales || '?';
+}
+
+const VISTAS: { valor: VistaRapida; etiqueta: string; icono: LucideIcon }[] = [
+  { valor: 'todas', etiqueta: 'Tareas', icono: ListChecks },
+  { valor: 'hoy', etiqueta: 'Hoy', icono: CalendarDays },
+  { valor: 'proximas', etiqueta: 'Próximas', icono: Clock },
+  { valor: 'completadas', etiqueta: 'Completadas', icono: CheckCircle },
+];
+
+interface ContenidoProps {
+  categorias: Categoria[];
+  etiquetas: Etiqueta[];
+  onCrearCategoria: (nombre: string) => Promise<unknown>;
+  onEliminarCategoria: (id: string) => Promise<void>;
+  onCrearEtiqueta: (nombre: string) => Promise<unknown>;
+  onFiltrarCategoria: (id: string) => void;
+  onFiltrarEtiqueta: (id: string) => void;
+  categoriaActiva?: string;
+  etiquetasActivas: string[];
+  usuario: Usuario | null;
+  onLogout: () => void;
+  onAccionCompletada: () => void;
+  vistaActiva: VistaRapida;
+  onSeleccionarVista: (vista: VistaRapida) => void;
+}
+
+function ItemVista({
+  icon: Icon,
+  etiqueta,
+  activo,
+  onClick,
+  reducedMotion,
+}: {
+  icon: LucideIcon;
+  etiqueta: string;
+  activo: boolean;
+  onClick: () => void;
+  reducedMotion: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={activo ? 'page' : undefined}
+      className={`relative flex h-9 w-full items-center gap-2 rounded-field px-2.5 text-[13.5px] font-medium transition-colors duration-120 ${
+        activo ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-surface-2/70'
+      }`}
+    >
+      {activo && (
+        <motion.span
+          layoutId="vista-activa-barra"
+          className="absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-full bg-brand"
+          transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+        />
+      )}
+      <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+      {etiqueta}
+    </button>
+  );
+}
+
+function SeccionColapsable({
+  icon: Icon,
+  titulo,
+  abierta,
+  onToggle,
+  reducedMotion,
+  children,
+}: {
+  icon: LucideIcon;
+  titulo: string;
+  abierta: boolean;
+  onToggle: () => void;
+  reducedMotion: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={abierta}
+        className="flex h-8 w-full items-center gap-2 rounded-field px-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3 hover:bg-surface-2/70"
+      >
+        <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+        <span className="flex-1 text-left">{titulo}</span>
+        <ChevronRight
+          size={14}
+          strokeWidth={1.75}
+          aria-hidden="true"
+          className={`transition-transform duration-180 ${abierta ? 'rotate-90' : ''}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {abierta && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.18 }}
+          >
+            <div className="pb-1 pt-1">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function SidebarContenido({
+  categorias,
+  etiquetas,
+  onCrearCategoria,
+  onEliminarCategoria,
+  onCrearEtiqueta,
+  onFiltrarCategoria,
+  onFiltrarEtiqueta,
+  categoriaActiva,
+  etiquetasActivas,
+  usuario,
+  onLogout,
+  onAccionCompletada,
+  vistaActiva,
+  onSeleccionarVista,
+}: ContenidoProps) {
+  const { mostrarToast } = useToast();
+  const reducedMotion = Boolean(useReducedMotion());
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState(false);
+  const [etiquetasAbiertas, setEtiquetasAbiertas] = useState(false);
   const [nuevaCategoria, setNuevaCategoria] = useState('');
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [categoriaConfirmando, setCategoriaConfirmando] = useState<Categoria | null>(null);
+  const [eliminandoCategoria, setEliminandoCategoria] = useState(false);
 
   async function crearCategoria(e: FormEvent) {
     e.preventDefault();
     if (!nuevaCategoria.trim()) return;
-    setError(null);
     try {
       await onCrearCategoria(nuevaCategoria.trim());
       setNuevaCategoria('');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo crear la categoría.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo crear la categoría.',
+      });
     }
   }
 
   async function crearEtiqueta(e: FormEvent) {
     e.preventDefault();
     if (!nuevaEtiqueta.trim()) return;
-    setError(null);
     try {
       await onCrearEtiqueta(nuevaEtiqueta.trim());
       setNuevaEtiqueta('');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo crear la etiqueta.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo crear la etiqueta.',
+      });
     }
   }
 
-  async function eliminarCategoria(id: string, nombre: string) {
-    if (!window.confirm(`¿Eliminar la categoría "${nombre}"? Las tareas quedarán sin categoría.`)) return;
-    setError(null);
+  async function confirmarEliminarCategoria() {
+    if (!categoriaConfirmando) return;
+    setEliminandoCategoria(true);
     try {
-      await onEliminarCategoria(id);
+      await onEliminarCategoria(categoriaConfirmando.id);
+      setCategoriaConfirmando(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo eliminar la categoría.');
+      mostrarToast({
+        tono: 'danger',
+        mensaje: err instanceof ApiError ? err.message : 'No se pudo eliminar la categoría.',
+      });
+    } finally {
+      setEliminandoCategoria(false);
     }
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-6 border-slate-200 bg-white p-4 lg:w-64 lg:border-r">
-      {error && <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>}
+    <>
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-line/70 px-4">
+        <LogoMark size={28} />
+        <span className="text-[15px] font-semibold text-ink">Tarelli</span>
+      </div>
 
-      <section>
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Categorías</h2>
-        <ul className="flex flex-col gap-1">
-          {categorias.map((c) => (
-            <li key={c.id} className="group flex items-center justify-between rounded-md px-2 py-1 hover:bg-slate-50">
-              <span className="truncate text-sm text-slate-700">{c.nombre}</span>
-              <button
-                type="button"
-                onClick={() => eliminarCategoria(c.id, c.nombre)}
-                className="hidden text-xs text-slate-400 hover:text-red-600 group-hover:block"
-                aria-label={`Eliminar categoría ${c.nombre}`}
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        <nav className="mb-3 flex flex-col gap-0.5">
+          {VISTAS.map((vista) => (
+            <ItemVista
+              key={vista.valor}
+              icon={vista.icono}
+              etiqueta={vista.etiqueta}
+              activo={vistaActiva === vista.valor}
+              onClick={() => {
+                onSeleccionarVista(vista.valor);
+                onAccionCompletada();
+              }}
+              reducedMotion={reducedMotion}
+            />
+          ))}
+        </nav>
+
+        <hr className="mx-1 mb-3 border-line/70" />
+
+        <SeccionColapsable
+          icon={Folder}
+          titulo="Categorías"
+          abierta={categoriasAbiertas}
+          onToggle={() => setCategoriasAbiertas((v) => !v)}
+          reducedMotion={reducedMotion}
+        >
+          <ul className="flex flex-col gap-0.5">
+            {categorias.map((c) => (
+              <li
+                key={c.id}
+                className={`group flex h-8 items-center gap-1 rounded-field px-2 ${
+                  categoriaActiva === c.id ? 'bg-brand-soft' : 'hover:bg-surface-2/70'
+                }`}
               >
-                ✕
-              </button>
-            </li>
-          ))}
-          {categorias.length === 0 && <li className="text-sm text-slate-400">Sin categorías aún.</li>}
-        </ul>
-        <form onSubmit={crearCategoria} className="mt-2 flex gap-1">
-          <input
-            value={nuevaCategoria}
-            onChange={(e) => setNuevaCategoria(e.target.value)}
-            placeholder="Nueva categoría"
-            className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-          />
-          <button type="submit" className="rounded-md bg-slate-100 px-2 py-1 text-sm text-slate-600 hover:bg-slate-200">
-            +
-          </button>
-        </form>
-      </section>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onFiltrarCategoria(c.id);
+                    onAccionCompletada();
+                  }}
+                  aria-pressed={categoriaActiva === c.id}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                >
+                  <span
+                    className={`h-2 w-2 shrink-0 rounded-full ${PUNTO_COLOR_CATEGORIA[colorCategoria(c.id)]}`}
+                    aria-hidden="true"
+                  />
+                  <span className={`truncate text-sm ${categoriaActiva === c.id ? 'font-medium text-brand' : 'text-ink'}`}>
+                    {c.nombre}
+                  </span>
+                </button>
+                <IconButton
+                  icon={Trash2}
+                  size="sm"
+                  variant="danger"
+                  aria-label={`Eliminar categoría ${c.nombre}`}
+                  className="opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+                  onClick={() => setCategoriaConfirmando(c)}
+                />
+              </li>
+            ))}
+            {categorias.length === 0 && <li className="px-2 text-sm text-ink-3">Sin categorías aún.</li>}
+          </ul>
+          <form onSubmit={crearCategoria} className="mt-2 flex gap-1.5">
+            <input
+              value={nuevaCategoria}
+              onChange={(e) => setNuevaCategoria(e.target.value)}
+              placeholder="Nueva categoría"
+              className="h-8 min-w-0 flex-1 rounded-field border border-line bg-surface/80 px-2.5 text-[13px] text-ink placeholder:text-ink-3 focus:border-brand"
+            />
+            <IconButton icon={Plus} size="sm" variant="secondary" aria-label="Crear categoría" type="submit" />
+          </form>
+        </SeccionColapsable>
 
-      <section>
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Etiquetas</h2>
-        <div className="flex flex-wrap gap-1">
-          {etiquetas.map((e) => (
-            <span key={e.id} className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
-              #{e.nombre}
-            </span>
-          ))}
-          {etiquetas.length === 0 && <p className="text-sm text-slate-400">Sin etiquetas aún.</p>}
+        <SeccionColapsable
+          icon={Tag}
+          titulo="Etiquetas"
+          abierta={etiquetasAbiertas}
+          onToggle={() => setEtiquetasAbiertas((v) => !v)}
+          reducedMotion={reducedMotion}
+        >
+          <div className="flex flex-wrap gap-1.5 px-1">
+            {etiquetas.map((e) => {
+              const activa = etiquetasActivas.includes(e.id);
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  aria-pressed={activa}
+                  onClick={() => onFiltrarEtiqueta(e.id)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-medium ${
+                    activa
+                      ? 'border-brand-line bg-brand-soft text-brand'
+                      : 'border-line bg-surface/80 text-ink-2 hover:bg-surface-2/70'
+                  }`}
+                >
+                  {activa && <Check size={11} strokeWidth={2.5} aria-hidden="true" />}#{e.nombre}
+                </button>
+              );
+            })}
+            {etiquetas.length === 0 && <p className="text-sm text-ink-3">Sin etiquetas aún.</p>}
+          </div>
+          <form onSubmit={crearEtiqueta} className="mt-2 flex gap-1.5 px-1">
+            <input
+              value={nuevaEtiqueta}
+              onChange={(e) => setNuevaEtiqueta(e.target.value)}
+              placeholder="Nueva etiqueta"
+              className="h-8 min-w-0 flex-1 rounded-field border border-line bg-surface/80 px-2.5 text-[13px] text-ink placeholder:text-ink-3 focus:border-brand"
+            />
+            <IconButton icon={Plus} size="sm" variant="secondary" aria-label="Crear etiqueta" type="submit" />
+          </form>
+        </SeccionColapsable>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2.5 border-t border-line/70 px-4 py-3">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[12px] font-semibold text-brand">
+          {usuario ? obtenerIniciales(usuario.nombre) : '?'}
         </div>
-        <form onSubmit={crearEtiqueta} className="mt-2 flex gap-1">
-          <input
-            value={nuevaEtiqueta}
-            onChange={(e) => setNuevaEtiqueta(e.target.value)}
-            placeholder="Nueva etiqueta"
-            className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
-          />
-          <button type="submit" className="rounded-md bg-slate-100 px-2 py-1 text-sm text-slate-600 hover:bg-slate-200">
-            +
-          </button>
-        </form>
-      </section>
-    </aside>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-medium text-ink">{usuario?.nombre}</p>
+          <p className="truncate text-xs text-ink-3">{usuario?.email}</p>
+        </div>
+        <IconButton icon={LogOut} size="sm" aria-label="Cerrar sesión" onClick={onLogout} />
+      </div>
+
+      <ConfirmDialog
+        abierto={categoriaConfirmando !== null}
+        titulo="Eliminar categoría"
+        descripcion={`¿Eliminar la categoría "${categoriaConfirmando?.nombre}"? Las tareas quedarán sin categoría.`}
+        textoConfirmar="Eliminar"
+        tono="danger"
+        cargando={eliminandoCategoria}
+        onConfirmar={confirmarEliminarCategoria}
+        onCancelar={() => setCategoriaConfirmando(null)}
+      />
+    </>
+  );
+}
+
+export function Sidebar({ abiertoMovil, onCerrarMovil, ...contenido }: Props) {
+  const reducedMotion = useReducedMotion();
+
+  return (
+    <>
+      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line/70 bg-surface/70 backdrop-blur-xl lg:flex">
+        <SidebarContenido {...contenido} onAccionCompletada={() => {}} />
+      </aside>
+
+      <AnimatePresence>
+        {abiertoMovil && (
+          <DrawerMovil onCerrar={onCerrarMovil} reducedMotion={Boolean(reducedMotion)}>
+            <SidebarContenido {...contenido} onAccionCompletada={onCerrarMovil} />
+          </DrawerMovil>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+function DrawerMovil({
+  children,
+  onCerrar,
+  reducedMotion,
+}: {
+  children: ReactNode;
+  onCerrar: () => void;
+  reducedMotion: boolean;
+}) {
+  return (
+    <div className="lg:hidden" onKeyDown={(e) => e.key === 'Escape' && onCerrar()}>
+      <motion.div
+        className="fixed inset-0 z-40 bg-ink/20 backdrop-blur-[2px]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: reducedMotion ? 0 : 0.16 }}
+        onClick={onCerrar}
+        aria-hidden="true"
+      />
+      <motion.aside
+        className="fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-line/70 bg-surface/90 shadow-lg backdrop-blur-xl"
+        initial={{ x: reducedMotion ? 0 : -280 }}
+        animate={{ x: 0 }}
+        exit={{ x: reducedMotion ? 0 : -280 }}
+        transition={{ duration: reducedMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {children}
+      </motion.aside>
+    </div>
   );
 }

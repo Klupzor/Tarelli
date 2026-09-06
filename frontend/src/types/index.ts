@@ -1,5 +1,8 @@
 export type Prioridad = 'baja' | 'media' | 'alta';
 
+/** Atajos de navegación del sidebar, derivados de `TareasFiltro` (sin estado propio en el backend). */
+export type VistaRapida = 'todas' | 'hoy' | 'proximas' | 'completadas';
+
 export interface Usuario {
   id: string;
   nombre: string;
@@ -62,6 +65,8 @@ export interface TareasFiltro {
   prioridad?: Prioridad;
   busqueda?: string;
   etiquetas?: string[];
+  fecha_vencimiento_desde?: string;
+  fecha_vencimiento_hasta?: string;
   ordenar?: 'creado_en' | 'fecha_vencimiento' | 'prioridad' | 'titulo';
   direccion?: 'asc' | 'desc';
   page?: number;

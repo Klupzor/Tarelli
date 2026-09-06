@@ -1,8 +1,16 @@
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent, KeyboardEvent } from 'react';
+import { AlertTriangle, Check } from 'lucide-react';
 import type { Categoria, Etiqueta, Prioridad, Tarea, TareaInput } from '../types';
 import { validarTitulo } from '../utils/validation';
 import { ApiError } from '../api/client';
+import { Modal } from './ui/Modal';
+import { Button } from './ui/Button';
+import { Field } from './ui/Field';
+import { Input } from './ui/Input';
+import { Textarea } from './ui/Textarea';
+import { Select } from './ui/Select';
+import { SegmentedControl } from './ui/SegmentedControl';
 
 interface Props {
   abierto: boolean;
@@ -13,7 +21,11 @@ interface Props {
   onGuardar: (input: TareaInput) => Promise<void>;
 }
 
-const PRIORIDADES: Prioridad[] = ['baja', 'media', 'alta'];
+const OPCIONES_PRIORIDAD: { valor: Prioridad; etiqueta: string; colorFondoActivo: string }[] = [
+  { valor: 'baja', etiqueta: 'Baja', colorFondoActivo: 'bg-tint-baja' },
+  { valor: 'media', etiqueta: 'Media', colorFondoActivo: 'bg-tint-media' },
+  { valor: 'alta', etiqueta: 'Alta', colorFondoActivo: 'bg-tint-alta' },
+];
 
 function inputVacio(): TareaInput {
   return {
@@ -31,6 +43,8 @@ export function TaskFormModal({ abierto, tareaInicial, categorias, etiquetas, on
   const [errorTitulo, setErrorTitulo] = useState<string | null>(null);
   const [errorServidor, setErrorServidor] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const tituloRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!abierto) return;
@@ -50,14 +64,10 @@ export function TaskFormModal({ abierto, tareaInicial, categorias, etiquetas, on
     }
   }, [abierto, tareaInicial]);
 
-  if (!abierto) return null;
-
   function toggleEtiqueta(id: string) {
     setForm((prev) => ({
       ...prev,
-      etiquetas: prev.etiquetas.includes(id)
-        ? prev.etiquetas.filter((e) => e !== id)
-        : [...prev.etiquetas, id],
+      etiquetas: prev.etiquetas.includes(id) ? prev.etiquetas.filter((e) => e !== id) : [...prev.etiquetas, id],
     }));
   }
 
@@ -79,137 +89,119 @@ export function TaskFormModal({ abierto, tareaInicial, categorias, etiquetas, on
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="task-form-title"
-    >
-      <div
-        id="task-form-modal"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
-      >
-        <h2 id="task-form-title" className="mb-4 text-lg font-semibold text-slate-900">
-          {tareaInicial ? 'Editar tarea' : 'Nueva tarea'}
-        </h2>
+  function onKeyDownForm(e: KeyboardEvent<HTMLFormElement>) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      formRef.current?.requestSubmit();
+    }
+  }
 
+  return (
+    <Modal
+      abierto={abierto}
+      onCerrar={onCerrar}
+      titulo={tareaInicial ? 'Editar tarea' : 'Nueva tarea'}
+      size="lg"
+      id="task-form-modal"
+      titleId="task-form-title"
+      focoInicialRef={tituloRef}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onCerrar} disabled={guardando}>
+            Cancelar
+          </Button>
+          <Button onClick={() => formRef.current?.requestSubmit()} loading={guardando}>
+            Guardar
+          </Button>
+        </>
+      }
+    >
+      <form
+        ref={formRef}
+        onSubmit={onSubmit}
+        onKeyDown={onKeyDownForm}
+        className="flex flex-col gap-4"
+        noValidate
+      >
         {errorServidor && (
-          <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{errorServidor}</div>
+          <div className="flex items-start gap-2 rounded-field border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger">
+            <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <p>{errorServidor}</p>
+          </div>
         )}
 
-        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-          <div>
-            <label htmlFor="tarea-titulo" className="mb-1 block text-sm font-medium text-slate-700">
-              Título
-            </label>
-            <input
-              id="tarea-titulo"
-              value={form.titulo}
-              onChange={(e) => setForm((p) => ({ ...p, titulo: e.target.value }))}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              autoFocus
-            />
-            {errorTitulo && <p className="mt-1 text-xs text-red-600">{errorTitulo}</p>}
-          </div>
+        <Field label="Título" htmlFor="tarea-titulo" error={errorTitulo}>
+          <Input ref={tituloRef} value={form.titulo} onChange={(e) => setForm((p) => ({ ...p, titulo: e.target.value }))} />
+        </Field>
 
-          <div>
-            <label htmlFor="tarea-descripcion" className="mb-1 block text-sm font-medium text-slate-700">
-              Descripción
-            </label>
-            <textarea
-              id="tarea-descripcion"
-              value={form.descripcion}
-              onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))}
-              rows={3}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        <Field label="Descripción" htmlFor="tarea-descripcion">
+          <Textarea
+            value={form.descripcion}
+            onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))}
+          />
+        </Field>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-ink">Prioridad</span>
+            <SegmentedControl
+              aria-label="Prioridad"
+              layoutId="modal-prioridad-segmento"
+              opciones={OPCIONES_PRIORIDAD}
+              valor={form.prioridad}
+              onChange={(valor) => setForm((p) => ({ ...p, prioridad: valor }))}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Prioridad</label>
-              <select
-                value={form.prioridad}
-                onChange={(e) => setForm((p) => ({ ...p, prioridad: e.target.value as Prioridad }))}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              >
-                {PRIORIDADES.map((p) => (
-                  <option key={p} value={p}>
-                    {p[0].toUpperCase() + p.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <Field label="Vence" htmlFor="tarea-vence">
+            <Input
+              type="date"
+              value={form.fecha_vencimiento ?? ''}
+              onChange={(e) => setForm((p) => ({ ...p, fecha_vencimiento: e.target.value || null }))}
+            />
+          </Field>
+        </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Vence</label>
-              <input
-                type="date"
-                value={form.fecha_vencimiento ?? ''}
-                onChange={(e) => setForm((p) => ({ ...p, fecha_vencimiento: e.target.value || null }))}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
+        <Field label="Categoría" htmlFor="tarea-categoria">
+          <Select
+            value={form.categoria_id ?? ''}
+            onChange={(e) => setForm((p) => ({ ...p, categoria_id: e.target.value || null }))}
+          >
+            <option value="">Sin categoría</option>
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        {etiquetas.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-ink">Etiquetas</span>
+            <div className="flex flex-wrap gap-1.5">
+              {etiquetas.map((etq) => {
+                const activa = form.etiquetas.includes(etq.id);
+                return (
+                  <button
+                    key={etq.id}
+                    type="button"
+                    aria-pressed={activa}
+                    onClick={() => toggleEtiqueta(etq.id)}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12.5px] font-medium transition-colors duration-120 ${
+                      activa
+                        ? 'border-brand-line bg-brand-soft text-brand'
+                        : 'border-line bg-surface text-ink-2 hover:bg-surface-2'
+                    }`}
+                  >
+                    {activa && <Check size={12} strokeWidth={2.5} aria-hidden="true" />}#{etq.nombre}
+                  </button>
+                );
+              })}
             </div>
           </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Categoría</label>
-            <select
-              value={form.categoria_id ?? ''}
-              onChange={(e) => setForm((p) => ({ ...p, categoria_id: e.target.value || null }))}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="">Sin categoría</option>
-              {categorias.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {etiquetas.length > 0 && (
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Etiquetas</label>
-              <div className="flex flex-wrap gap-2">
-                {etiquetas.map((etq) => {
-                  const activa = form.etiquetas.includes(etq.id);
-                  return (
-                    <button
-                      type="button"
-                      key={etq.id}
-                      onClick={() => toggleEtiqueta(etq.id)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                        activa ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      #{etq.nombre}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onCerrar}
-              className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={guardando}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-            >
-              {guardando ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        )}
+      </form>
+    </Modal>
   );
 }

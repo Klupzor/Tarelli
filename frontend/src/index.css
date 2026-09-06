@@ -1,21 +1,149 @@
 @import 'tailwindcss';
 
+@theme {
+  /* ---- Superficies -------------------------------------------------- */
+  --color-canvas: #f4f4f8;         /* base bajo el fondo decorativo */
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f3f7;
+
+  /* ---- Fondo decorativo (manchas del degradado en malla) ------------ */
+  --color-mesh-1: #dcdffb;         /* violeta */
+  --color-mesh-2: #ffe6d2;         /* ámbar cálido */
+  --color-mesh-3: #d6f0e8;         /* verde agua */
+
+  /* ---- Bordes ------------------------------------------------------- */
+  --color-line: #e7e7ee;
+  --color-line-strong: #d6d6e0;
+
+  /* ---- Texto -------------------------------------------------------- */
+  --color-ink: #17171c;
+  --color-ink-2: #5c5c68;          /* secundario, cumple AA */
+  --color-ink-3: #8e8e9c;          /* SOLO placeholders, iconos y metadatos
+                                      no esenciales: no llega a AA en 14px */
+
+  /* ---- Marca -------------------------------------------------------- */
+  --color-brand: #5b5bd6;
+  --color-brand-hover: #4b4bc4;
+  --color-brand-soft: #eeeefc;
+  --color-brand-line: #dcdcf7;
+
+  /* ---- Tinte de tarjeta por PRIORIDAD (núcleo del rediseño) --------- */
+  --color-tint-alta: #fde9e6;      /* rosa  */
+  --color-edge-alta: #f6cdc7;
+  --color-tint-media: #fdf1dd;     /* ámbar */
+  --color-edge-media: #f2ddb6;
+  --color-tint-baja: #ffffff;      /* neutra: la prioridad baja no grita */
+  --color-edge-baja: #e7e7ee;
+  --color-tint-hecha: #f1f1f5;     /* completada: apagada */
+  --color-edge-hecha: #e3e3ea;
+
+  /* ---- Semánticos (badges y estados) -------------------------------- */
+  --color-danger: #b42318;
+  --color-danger-soft: #fef3f2;
+  --color-danger-line: #fecdca;
+  --color-warn: #b54708;
+  --color-warn-soft: #fffaeb;
+  --color-warn-line: #fedf89;
+  --color-ok: #067647;
+  --color-ok-soft: #ecfdf3;
+  --color-ok-line: #abefc6;
+
+  /* ---- Color de categoría (§6.4): 6 pares determinísticos por hash -- */
+  --color-cat-violeta: #f1eefe;
+  --color-cat-violeta-ink: #6d28d9;
+  --color-cat-ambar: #fdf3df;
+  --color-cat-ambar-ink: #b45309;
+  --color-cat-verde: #eafbf0;
+  --color-cat-verde-ink: #15803d;
+  --color-cat-rosa: #fdeef5;
+  --color-cat-rosa-ink: #be185d;
+  --color-cat-cian: #e9fafa;
+  --color-cat-cian-ink: #0e7490;
+  --color-cat-indigo: #eef1fd;
+  --color-cat-indigo-ink: #4338ca;
+
+  /* ---- Radios ------------------------------------------------------- */
+  --radius-field: 10px;
+  --radius-card: 16px;
+  --radius-modal: 20px;
+
+  /* ---- Sombras (suaves, nunca duras) -------------------------------- */
+  --shadow-xs: 0 1px 2px 0 rgb(16 24 40 / 0.04);
+  --shadow-card: 0 1px 2px 0 rgb(16 24 40 / 0.04), 0 8px 24px -12px rgb(16 24 40 / 0.10);
+  --shadow-card-hover: 0 2px 4px 0 rgb(16 24 40 / 0.05), 0 12px 28px -12px rgb(16 24 40 / 0.16);
+  --shadow-chrome: 0 1px 0 0 rgb(16 24 40 / 0.03);
+  --shadow-modal: 0 24px 56px -16px rgb(16 24 40 / 0.24);
+
+  /* ---- Tipografía --------------------------------------------------- */
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* ---- Movimiento --------------------------------------------------- */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 :root {
   color-scheme: light;
 }
 
+html {
+  margin: 0;
+  min-height: 100%;
+}
+
+/* El color de fondo va SOLO en body, nunca en html: si html tiene un
+   background-color explícito, se convierte en el "canvas" del documento y
+   pinta por debajo incluso de elementos con z-index negativo (el mesh
+   decorativo de más abajo dejaría de verse). */
 body {
   margin: 0;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  min-height: 100%;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fondo decorativo: tres manchas radiales fijas. Solo CSS, sin imágenes.
+   Va en un pseudo-elemento fijo para que no se mueva con el scroll ni
+   participe en el layout. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 8% 4%, var(--color-mesh-1) 0%, transparent 60%),
+    radial-gradient(50rem 36rem at 92% 12%, var(--color-mesh-2) 0%, transparent 58%),
+    radial-gradient(56rem 40rem at 60% 96%, var(--color-mesh-3) 0%, transparent 60%);
+  opacity: 0.75;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Anillo de foco único. Nunca eliminar el outline sin reemplazarlo. */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-field);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

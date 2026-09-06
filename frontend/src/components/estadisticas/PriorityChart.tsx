@@ -1,6 +1,10 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
+import { Table2 } from 'lucide-react';
 import type { Prioridad } from '../../types';
 import type { SegmentoPrioridad } from '../../utils/estadisticas';
+import { IconButton } from '../ui/IconButton';
+import { ChartTooltip } from './ChartTooltip';
+import { TablaDatos } from './TablaDatos';
 
 interface PriorityChartProps {
   datos: SegmentoPrioridad[];
@@ -20,6 +24,9 @@ const COLOR: Record<Prioridad, string> = {
 /** Barra apilada, no un donut: tres segmentos cuyos valores pueden ser muy próximos (§5.3). */
 export function PriorityChart({ datos }: PriorityChartProps) {
   const clipId = useId();
+  const [vistaTabla, setVistaTabla] = useState(false);
+  const [activo, setActivo] = useState<Prioridad | null>(null);
+
   const visibles = datos.filter((d) => d.valor > 0);
   const total = visibles.reduce((acc, d) => acc + d.valor, 0);
   const resumen = datos.map((d) => `${d.valor} ${d.etiqueta.toLowerCase()}`).join(', ');
@@ -33,32 +40,79 @@ export function PriorityChart({ datos }: PriorityChartProps) {
     return [...acc, { ...seg, x, ancho }];
   }, []);
 
+  const segmentoActivo = segmentos.find((s) => s.prioridad === activo) ?? null;
+
   return (
     <figure>
-      <figcaption className="mb-3 text-[14.5px] font-semibold text-ink">Pendientes por prioridad</figcaption>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <figcaption className="text-[14.5px] font-semibold text-ink">Pendientes por prioridad</figcaption>
+        {total > 0 && (
+          <IconButton
+            icon={Table2}
+            size="sm"
+            variant={vistaTabla ? 'secondary' : 'ghost'}
+            aria-label={vistaTabla ? 'Mostrar gráfica' : 'Mostrar tabla de datos'}
+            aria-pressed={vistaTabla}
+            onClick={() => setVistaTabla((v) => !v)}
+          />
+        )}
+      </div>
+
       {total === 0 ? (
         <p className="text-sm text-ink-2">No hay tareas pendientes.</p>
+      ) : vistaTabla ? (
+        <TablaDatos
+          caption="Pendientes por prioridad"
+          columnas={['Prioridad', 'Tareas', 'Porcentaje']}
+          filas={visibles.map((s) => [s.etiqueta, s.valor, `${Math.round((s.valor / total) * 100)}%`])}
+        />
       ) : (
         <>
-          <svg
-            viewBox={`0 0 ${ANCHO_VIEWBOX} ${ALTURA}`}
-            preserveAspectRatio="none"
-            className="h-3 w-full"
-            role="img"
-            aria-label={`Pendientes por prioridad: ${resumen}`}
-          >
-            <defs>
-              <clipPath id={clipId}>
-                <rect x={0} y={0} width={ANCHO_VIEWBOX} height={ALTURA} rx={RADIO} />
-              </clipPath>
-            </defs>
-            <rect x={0} y={0} width={ANCHO_VIEWBOX} height={ALTURA} rx={RADIO} className="fill-surface-2" />
-            <g clipPath={`url(#${clipId})`}>
+          <div className="relative">
+            <svg
+              viewBox={`0 0 ${ANCHO_VIEWBOX} ${ALTURA}`}
+              preserveAspectRatio="none"
+              className="h-3 w-full overflow-visible"
+              role="img"
+              aria-label={`Pendientes por prioridad: ${resumen}`}
+            >
+              <defs>
+                <clipPath id={clipId}>
+                  <rect x={0} y={0} width={ANCHO_VIEWBOX} height={ALTURA} rx={RADIO} />
+                </clipPath>
+              </defs>
+              <rect x={0} y={0} width={ANCHO_VIEWBOX} height={ALTURA} rx={RADIO} className="fill-surface-2" />
+              <g clipPath={`url(#${clipId})`}>
+                {segmentos.map((seg) => (
+                  <rect key={seg.prioridad} x={seg.x} y={0} width={seg.ancho} height={ALTURA} style={{ fill: COLOR[seg.prioridad] }} />
+                ))}
+              </g>
+              {/* Área sensible más grande que la marca visible (12px), para ratón y foco de teclado. */}
               {segmentos.map((seg) => (
-                <rect key={seg.prioridad} x={seg.x} y={0} width={seg.ancho} height={ALTURA} style={{ fill: COLOR[seg.prioridad] }} />
+                <rect
+                  key={`hit-${seg.prioridad}`}
+                  x={seg.x}
+                  y={-6}
+                  width={seg.ancho}
+                  height={ALTURA + 12}
+                  fill="transparent"
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${seg.etiqueta}: ${seg.valor} tareas, ${Math.round((seg.valor / total) * 100)} por ciento`}
+                  onMouseEnter={() => setActivo(seg.prioridad)}
+                  onMouseLeave={() => setActivo(null)}
+                  onFocus={() => setActivo(seg.prioridad)}
+                  onBlur={() => setActivo(null)}
+                />
               ))}
-            </g>
-          </svg>
+            </svg>
+            {segmentoActivo && (
+              <ChartTooltip xPct={((segmentoActivo.x + segmentoActivo.ancho / 2) / ANCHO_VIEWBOX) * 100}>
+                {segmentoActivo.etiqueta}: <span className="tabular font-medium">{segmentoActivo.valor}</span> (
+                {Math.round((segmentoActivo.valor / total) * 100)}%)
+              </ChartTooltip>
+            )}
+          </div>
 
           <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
             {visibles.map((seg) => (

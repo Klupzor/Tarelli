@@ -62,6 +62,16 @@
   --color-cat-indigo: #eef1fd;
   --color-cat-indigo-ink: #4338ca;
 
+  /* ---- Paleta de datos (§5.4 de frontend-features.md): validada contra
+     contraste y daltonismo. Si se cambia un color, hay que revalidar el
+     conjunto entero. Los componentes usan estos roles, nunca el hex. ---- */
+  --color-dato-alta: #c5334f;
+  --color-dato-media: #e0a020;
+  --color-dato-baja: #2a78d6;
+  --color-dato-serie: #2a78d6;
+  --color-grid: #e7e7ee;
+  --color-eje: #d6d6e0;
+
   /* ---- Radios ------------------------------------------------------- */
   --radius-field: 10px;
   --radius-card: 16px;
@@ -132,6 +142,14 @@
   --color-ok: #4ec08d;
   --color-ok-soft: #14301f;
   --color-ok-line: #245c3d;
+
+  /* ---- Paleta de datos (§5.4 de frontend-features.md), variante oscura */
+  --color-dato-alta: #d94a63;
+  --color-dato-media: #c98500;
+  --color-dato-baja: #3987e5;
+  --color-dato-serie: #3987e5;
+  --color-grid: #282a35;
+  --color-eje: #363948;
 }
 
 /* El fondo decorativo pesa menos en oscuro: a plena opacidad ensucia. */

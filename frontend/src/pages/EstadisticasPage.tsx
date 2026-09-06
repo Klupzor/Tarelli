@@ -6,11 +6,14 @@ import { useCategorias } from '../hooks/useCategorias';
 import { useEtiquetas } from '../hooks/useEtiquetas';
 import { useTodasLasTareas } from '../hooks/useTodasLasTareas';
 import { hoyEnZona } from '../utils/fechas';
-import { calcularResumen } from '../utils/estadisticas';
+import { calcularCategorias, calcularPrioridad, calcularResumen, calcularTendencia } from '../utils/estadisticas';
 import { Sidebar } from '../components/Sidebar';
 import { DashboardCard } from '../components/estadisticas/DashboardCard';
 import { StatTile } from '../components/estadisticas/StatTile';
 import { Meter } from '../components/estadisticas/Meter';
+import { PriorityChart } from '../components/estadisticas/PriorityChart';
+import { CategoryChart } from '../components/estadisticas/CategoryChart';
+import { TrendChart } from '../components/estadisticas/TrendChart';
 import { Button } from '../components/ui/Button';
 import { IconButton } from '../components/ui/IconButton';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -27,8 +30,11 @@ function EstadisticasCargando() {
         ))}
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-card border border-line bg-surface/72 p-5 oscuro:bg-surface/85">
+        {[1, 1, 2, 2].map((span, i) => (
+          <div
+            key={i}
+            className={`rounded-card border border-line bg-surface/72 p-5 oscuro:bg-surface/85 ${span === 2 ? 'md:col-span-2' : ''}`}
+          >
             <Skeleton className="mb-3 h-4 w-32 rounded-full" />
             <Skeleton className="h-16 w-full rounded-field" />
           </div>
@@ -47,7 +53,11 @@ export default function EstadisticasPage() {
   const timezone = usuario?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const { tareas, cargando, error, truncado, recargar } = useTodasLasTareas();
-  const resumen = calcularResumen(tareas, hoyEnZona(timezone));
+  const hoy = hoyEnZona(timezone);
+  const resumen = calcularResumen(tareas, hoy);
+  const prioridad = calcularPrioridad(tareas);
+  const categorias = calcularCategorias(tareas);
+  const tendencia = calcularTendencia(tareas, hoy, timezone);
 
   return (
     <div className="flex min-h-screen">
@@ -131,6 +141,15 @@ export default function EstadisticasPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <DashboardCard>
                   <Meter valor={resumen.tasaFinalizacion} />
+                </DashboardCard>
+                <DashboardCard>
+                  <PriorityChart datos={prioridad} />
+                </DashboardCard>
+                <DashboardCard className="md:col-span-2">
+                  <CategoryChart datos={categorias} />
+                </DashboardCard>
+                <DashboardCard className="md:col-span-2">
+                  <TrendChart datos={tendencia} />
                 </DashboardCard>
               </div>
             </div>

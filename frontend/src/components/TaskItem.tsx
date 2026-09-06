@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { AlertTriangle, CalendarDays, CheckCircle2, Flag, Pencil, Trash2 } from 'lucide-react';
 import type { Tarea } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { Checkbox } from './ui/Checkbox';
 import { IconButton } from './ui/IconButton';
 import { ConfirmDialog } from './ui/ConfirmDialog';
 import { obtenerColorCategoria } from '../utils/categoriaColor';
+import { hoyEnZona } from '../utils/fechas';
 
 interface Props {
   tarea: Tarea;
@@ -22,17 +24,18 @@ function formatearFecha(fecha: string | null): string | null {
   return `${dia}/${mes}/${anio}`;
 }
 
-function estaVencida(tarea: Tarea): boolean {
+function estaVencida(tarea: Tarea, hoy: string): boolean {
   if (!tarea.fecha_vencimiento || tarea.completada) return false;
-  const hoy = new Date().toISOString().slice(0, 10);
   return tarea.fecha_vencimiento.slice(0, 10) < hoy;
 }
 
 export function TaskItem({ tarea, onCompletar, onEditar, onEliminar }: Props) {
+  const { usuario } = useAuth();
   const [confirmando, setConfirmando] = useState(false);
   const [eliminando, setEliminando] = useState(false);
   const reducedMotion = useReducedMotion();
-  const vencida = estaVencida(tarea);
+  const timezone = usuario?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const vencida = estaVencida(tarea, hoyEnZona(timezone));
   const color = obtenerColorCategoria(tarea.categoria_id);
 
   const etiquetasVisibles = tarea.etiquetas.slice(0, MAX_ETIQUETAS_VISIBLES);

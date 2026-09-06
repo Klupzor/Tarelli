@@ -5,7 +5,7 @@ import { useCategorias } from '../hooks/useCategorias';
 import { useEtiquetas } from '../hooks/useEtiquetas';
 import { useTareas } from '../hooks/useTareas';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { rangoHoy, rangoProximas } from '../hooks/useConteosTareas';
+import { hoyEnZona, sumarDias } from '../utils/fechas';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { FiltersBar } from '../components/FiltersBar';
@@ -26,14 +26,12 @@ const TITULOS_VISTA: Record<VistaRapida, string> = {
   completadas: 'Completadas',
 };
 
-function filtroDeVista(vista: VistaRapida): TareasFiltro {
+function filtroDeVista(vista: VistaRapida, timezone: string): TareasFiltro {
   if (vista === 'hoy') {
-    const { desde, hasta } = rangoHoy();
-    return { ...FILTRO_INICIAL, completada: false, fecha_vencimiento_desde: desde, fecha_vencimiento_hasta: hasta };
+    return { ...FILTRO_INICIAL, fecha_vencimiento_hasta: hoyEnZona(timezone) };
   }
   if (vista === 'proximas') {
-    const { desde, hasta } = rangoProximas();
-    return { ...FILTRO_INICIAL, completada: false, fecha_vencimiento_desde: desde, fecha_vencimiento_hasta: hasta };
+    return { ...FILTRO_INICIAL, fecha_vencimiento_desde: sumarDias(hoyEnZona(timezone), 1) };
   }
   if (vista === 'completadas') {
     return { ...FILTRO_INICIAL, completada: true };
@@ -41,26 +39,15 @@ function filtroDeVista(vista: VistaRapida): TareasFiltro {
   return FILTRO_INICIAL;
 }
 
-function detectarVista(filtro: TareasFiltro): VistaRapida {
+function detectarVista(filtro: TareasFiltro, timezone: string): VistaRapida {
   if (filtro.categoria || filtro.prioridad || filtro.etiquetas?.length) return 'todas';
-  if (filtro.completada === true && !filtro.fecha_vencimiento_desde) return 'completadas';
 
-  const hoy = rangoHoy();
-  const proximas = rangoProximas();
-  if (
-    filtro.completada === false &&
-    filtro.fecha_vencimiento_desde === hoy.desde &&
-    filtro.fecha_vencimiento_hasta === hoy.hasta
-  ) {
-    return 'hoy';
-  }
-  if (
-    filtro.completada === false &&
-    filtro.fecha_vencimiento_desde === proximas.desde &&
-    filtro.fecha_vencimiento_hasta === proximas.hasta
-  ) {
-    return 'proximas';
-  }
+  const hoy = hoyEnZona(timezone);
+  const manana = sumarDias(hoy, 1);
+
+  if (filtro.fecha_vencimiento_hasta === hoy && !filtro.fecha_vencimiento_desde) return 'hoy';
+  if (filtro.fecha_vencimiento_desde === manana && !filtro.fecha_vencimiento_hasta) return 'proximas';
+  if (filtro.completada === true) return 'completadas';
   return 'todas';
 }
 
@@ -69,13 +56,14 @@ export default function TasksPage() {
   const { mostrarToast } = useToast();
   const categoriasState = useCategorias();
   const etiquetasState = useEtiquetas();
+  const timezone = usuario?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const [filtro, setFiltro] = useState<TareasFiltro>(FILTRO_INICIAL);
   const [busquedaInput, setBusquedaInput] = useState('');
   const busquedaDebounced = useDebouncedValue(busquedaInput, 350);
   const [sidebarAbierta, setSidebarAbierta] = useState(false);
 
-  const vistaActiva = detectarVista(filtro);
+  const vistaActiva = detectarVista(filtro, timezone);
 
   const hayFiltrosActivos = Boolean(
     filtro.completada !== undefined ||
@@ -84,6 +72,7 @@ export default function TasksPage() {
       filtro.etiquetas?.length ||
       busquedaInput.trim() ||
       filtro.fecha_vencimiento_desde ||
+      filtro.fecha_vencimiento_hasta ||
       (filtro.ordenar && filtro.ordenar !== FILTRO_INICIAL.ordenar) ||
       (filtro.direccion && filtro.direccion !== FILTRO_INICIAL.direccion),
   );
@@ -95,7 +84,7 @@ export default function TasksPage() {
 
   function seleccionarVista(vista: VistaRapida) {
     setBusquedaInput('');
-    setFiltro(filtroDeVista(vista));
+    setFiltro(filtroDeVista(vista, timezone));
   }
 
   function filtrarPorCategoria(id: string) {

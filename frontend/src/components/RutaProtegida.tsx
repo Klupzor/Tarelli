@@ -5,7 +5,7 @@ import { LogoMark } from './ui/LogoMark';
 
 function RecuperandoSesion() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-canvas">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3">
       <div className="animate-pulse">
         <LogoMark size={40} />
       </div>

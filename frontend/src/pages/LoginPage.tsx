@@ -42,58 +42,56 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="rounded-card border border-line bg-surface p-8 shadow-sm">
-        <h1 className="text-xl font-semibold tracking-[-0.01em] text-ink">Bienvenido de nuevo</h1>
-        <p className="mt-1 text-sm text-ink-2">Inicia sesión para gestionar tus tareas.</p>
+      <h1 className="text-xl font-semibold tracking-[-0.01em] text-ink">Bienvenido de nuevo</h1>
+      <p className="mt-1 text-sm text-ink-2">Inicia sesión para gestionar tus tareas.</p>
 
-        {errorServidor && (
-          <div className="mt-4 flex items-start gap-2 rounded-field border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger">
-            <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <p>{errorServidor}</p>
-          </div>
-        )}
+      {errorServidor && (
+        <div className="mt-4 flex items-start gap-2 rounded-field border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger">
+          <AlertTriangle size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
+          <p>{errorServidor}</p>
+        </div>
+      )}
 
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
-          <Field label="Email" htmlFor="email" error={errores.email}>
-            <Input
-              type="email"
-              icon={Mail}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-          </Field>
+      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4" noValidate>
+        <Field label="Email" htmlFor="email" error={errores.email}>
+          <Input
+            type="email"
+            icon={Mail}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+        </Field>
 
-          <Field label="Contraseña" htmlFor="password" error={errores.password}>
-            <Input
-              type={mostrarPassword ? 'text' : 'password'}
-              icon={Lock}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              trailing={
-                <IconButton
-                  icon={mostrarPassword ? EyeOff : Eye}
-                  size="sm"
-                  aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  onClick={() => setMostrarPassword((v) => !v)}
-                />
-              }
-            />
-          </Field>
+        <Field label="Contraseña" htmlFor="password" error={errores.password}>
+          <Input
+            type={mostrarPassword ? 'text' : 'password'}
+            icon={Lock}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            trailing={
+              <IconButton
+                icon={mostrarPassword ? EyeOff : Eye}
+                size="sm"
+                aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                onClick={() => setMostrarPassword((v) => !v)}
+              />
+            }
+          />
+        </Field>
 
-          <Button type="submit" loading={enviando} className="mt-2 h-10! w-full">
-            Ingresar
-          </Button>
-        </form>
+        <Button type="submit" loading={enviando} className="mt-2 h-10! w-full">
+          Ingresar
+        </Button>
+      </form>
 
-        <p className="mt-6 text-center text-sm text-ink-2">
-          ¿No tienes cuenta?{' '}
-          <Link to="/registro" className="font-medium text-brand hover:underline">
-            Regístrate
-          </Link>
-        </p>
-      </div>
+      <p className="mt-6 text-center text-sm text-ink-2">
+        ¿No tienes cuenta?{' '}
+        <Link to="/registro" className="font-medium text-brand hover:underline">
+          Regístrate
+        </Link>
+      </p>
     </AuthLayout>
   );
 }

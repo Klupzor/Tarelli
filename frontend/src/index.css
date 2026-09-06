@@ -62,7 +62,7 @@
   --color-cat-indigo: #eef1fd;
   --color-cat-indigo-ink: #4338ca;
 
-  /* ---- Paleta de datos (§5.4 de frontend-features.md): validada contra
+  /* ---- Paleta de datos: validada contra
      contraste y daltonismo. Si se cambia un color, hay que revalidar el
      conjunto entero. Los componentes usan estos roles, nunca el hex. ---- */
   --color-dato-alta: #c5334f;
@@ -143,7 +143,7 @@
   --color-ok-soft: #14301f;
   --color-ok-line: #245c3d;
 
-  /* ---- Paleta de datos (§5.4 de frontend-features.md), variante oscura */
+  /* ---- Paleta de datos, variante oscura */
   --color-dato-alta: #d94a63;
   --color-dato-media: #c98500;
   --color-dato-baja: #3987e5;

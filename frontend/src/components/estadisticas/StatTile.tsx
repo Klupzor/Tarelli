@@ -3,7 +3,7 @@ import { DashboardCard } from './DashboardCard';
 interface StatTileProps {
   etiqueta: string;
   valor: string | number;
-  /** "Vencidas" se resalta en rojo cuando es > 0 (§5.3 de frontend-features.md). */
+  /** "Vencidas" se resalta en rojo cuando es > 0. */
   destacarPeligro?: boolean;
 }
 

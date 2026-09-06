@@ -4,16 +4,46 @@ Aplicación web de gestión personal de tareas. React (frontend) + Node.js/Expre
 en Modular Monolith (backend) + PostgreSQL, contenerizada con Docker y pensada
 para desplegarse en AWS (ECS + Fargate, RDS, Secrets Manager, WAF).
 
+No existen roles ni administradores: cada usuario autenticado solo puede ver y
+modificar sus propios recursos (ownership estricto verificado en cada consulta).
+
+## Funcionalidades
+
+**Del alcance del reto**
+
+- Registro, login, logout y recuperación silenciosa de sesión al recargar.
+- CRUD completo de tareas, con prioridad, fecha de vencimiento, categoría
+  opcional y etiquetas.
+- CRUD de categorías; creación y listado de etiquetas.
+- Completar y descompletar tareas de forma idempotente, con actualización
+  optimista en la interfaz.
+- Filtros por estado, prioridad, categoría y etiquetas (semántica **AND**),
+  búsqueda de texto completo (PostgreSQL FTS), ordenamiento y paginación.
+- Historial de actividad por tarea (`activity_logs`), ver la nota más abajo.
+- 10 consultas SQL de inteligencia de negocio.
+
+**Extras añadidos por encima del reto** (la especificación los listaba como
+fuera de alcance; se implementaron igualmente, **solo en el frontend y sin
+tocar la API**)
+
+- **Tema claro / oscuro / sistema**, con la preferencia persistida y sin
+  destello al recargar.
+- **Dashboard de estadísticas** (`/estadisticas`): indicadores, tasa de
+  finalización, distribución de pendientes por prioridad y por categoría, y
+  tendencia de tareas completadas por semana.
+- **Exportación a CSV y JSON** de las tareas que cumplen los filtros activos.
 
 ## Stack
 
 | Área | Tecnología |
 |---|---|
-| Frontend | React + TypeScript + Vite + Tailwind CSS + React Router |
+| Frontend | React 19 + TypeScript + Vite + Tailwind CSS 4 + React Router 7 |
+| UI | Componentes propios (sin librería de componentes), `lucide-react`, `motion`, fuente Inter self-hosted |
+| Gráficas | SVG escrito a mano, sin librería de charts |
 | Backend | Node.js + Express + TypeScript (Modular Monolith) |
 | Base de datos | PostgreSQL 16 (Docker en desarrollo, Amazon RDS en producción) |
 | Acceso a datos | `pg` (node-postgres) + SQL parametrizado a mano — sin ORM |
-| Autenticación | Argon2id + JWT de acceso (memoria) + refresh token rotable (cookie HttpOnly) |
+| Autenticación | Argon2id + JWT de acceso (en memoria) + refresh token rotable (cookie HttpOnly) |
 | Tests backend | Jest + Supertest, contra una base de datos PostgreSQL real |
 | Contenedores | Docker / Docker Compose |
 
@@ -21,19 +51,27 @@ para desplegarse en AWS (ECS + Fargate, RDS, Secrets Manager, WAF).
 
 ```text
 .
-├── frontend/           React + Vite + Tailwind (SPA)
-├── backend/             Express modular monolith (TypeScript)
-│   ├── src/modules/     auth, tareas, categorias, etiquetas, usuarios
-│   ├── src/shared/      db, middleware, errores, validación, logging
-│   └── tests/           unit, integration, api
+├── frontend/                 React + Vite + Tailwind (SPA)
+│   └── src/
+│       ├── api/               cliente HTTP centralizado + token en memoria
+│       ├── components/        UI de la aplicación
+│       │   ├── ui/            primitivas (Button, Modal, Popover, Toast…)
+│       │   └── estadisticas/  tarjetas y gráficas del dashboard
+│       ├── context/           AuthContext, ThemeContext
+│       ├── hooks/             tareas, categorías, etiquetas, paginado completo
+│       ├── pages/             Login, Registro, Tareas, Estadísticas
+│       └── utils/             fechas, exportación, colores de categoría
+├── backend/                  Express modular monolith (TypeScript)
+│   ├── src/modules/           auth, tareas, categorias, etiquetas, usuarios
+│   ├── src/shared/            db, middleware, errores, validación, logging
+│   └── tests/                 unit, integration, api
 ├── database/
-│   ├── migrations/      SQL versionado (0001..0009)
-│   ├── seeds/            datos de desarrollo/pruebas
-│   └── queries/          10 consultas SQL de analítica (BI)
+│   ├── migrations/            SQL versionado (0001..0009)
+│   ├── seeds/                 datos de desarrollo/pruebas
+│   └── queries/               10 consultas SQL de analítica (BI)
 ├── docs/
-│   ├── openapi.yaml                                  especificación completa de la API
-│   ├── reto-tecnico-fullstack-arquitectura.md          documento de arquitectura (fuente)
-│   └── reto-tecnico-fullstack-especificacion-implementacion.md  especificación (fuente)
+│   └── openapi.yaml           especificación completa de la API
+├── CLAUDE.md                 contexto del proyecto para asistentes de código
 ├── docker-compose.yml
 └── .env.example
 ```
@@ -106,6 +144,9 @@ cp .env.example .env    # VITE_API_BASE_URL=http://localhost:4000/api
 npm run dev              # http://localhost:5173
 ```
 
+Scripts del frontend: `npm run dev`, `npm run build` (type-check + build de
+producción), `npm run preview`, `npm run lint`.
+
 ## Tests
 
 ```bash
@@ -114,8 +155,8 @@ npm install
 npm test
 ```
 
-La suite (`npm test`) crea/actualiza automáticamente el esquema en la base de
-datos de pruebas (por defecto `postgres://tarelli_app:devpass@localhost:5432/tarelli_test`,
+La suite crea/actualiza automáticamente el esquema en la base de datos de
+pruebas (por defecto `postgres://tarelli_app:devpass@localhost:5432/tarelli_test`,
 configurable con `TEST_DATABASE_URL`) mediante un `globalSetup` de Jest, y
 limpia las tablas entre cada test. Cubre:
 
@@ -134,7 +175,8 @@ limpia las tablas entre cada test. Cubre:
   refresh token, rollback ante fallos).
 - Búsqueda Full-Text Search.
 
-54 tests, 8 suites, todos en verde en el estado actual del repositorio.
+54 tests en 8 suites. El frontend no tiene suite automatizada: se verificó
+manualmente contra los criterios de aceptación de cada entrega.
 
 ## Consultas de analítica (Business Intelligence)
 
@@ -161,6 +203,10 @@ Las 10 consultas:
 8. Distribución de prioridades entre usuarios activos en los últimos 7 días.
 9. Creación y finalización mensual del último año.
 10. Top 10% de usuarios por tasa de finalización y promedio de tareas simultáneas.
+
+Son consultas **entre usuarios**, pensadas para ejecutarse a mano. No hay que
+confundirlas con el dashboard de la aplicación, que es personal y del usuario
+autenticado.
 
 ## API
 
@@ -196,6 +242,13 @@ POST   /api/etiquetas
 Formato de respuesta exitosa: `{"data": ..., "meta": ...}`.
 Formato de error: `{"error": {"code", "message", "details"}}`.
 
+**La lista de rutas está cerrada** y así se mantuvo: el dashboard y la
+exportación no añadieron endpoints. Ambos se resuelven en el cliente paginando
+`GET /api/tareas` (100 resultados por página, con tope de 10 páginas y aviso
+explícito en la interfaz cuando el resultado queda truncado). Las vistas "Hoy"
+y "Próximas" tampoco son endpoints nuevos: usan los parámetros de fecha que la
+API ya aceptaba.
+
 ### Nota sobre `activity_logs`
 
 La tabla `activity_logs` (historial de actividad de una tarea) se implementa
@@ -206,6 +259,30 @@ como endpoint HTTP porque la lista de rutas del reto es cerrada ("se
 mantienen las rutas originales... y se agregan únicamente `/api/auth/refresh`
 y `/api/auth/logout`"); el historial queda disponible para consultas internas
 y está cubierto por los tests de integración (`backend/tests/integration`).
+
+## Interfaz
+
+Diseño propio, sin librería de componentes: superficies translúcidas sobre un
+fondo decorativo en CSS, rejilla de tarjetas y una paleta con un único color de
+acento.
+
+- **El fondo de cada tarjeta codifica la prioridad** — alta en rosa, media en
+  ámbar, baja sin tinte — y una tarea completada pierde el tinte y pasa a gris.
+  El color nunca es el único canal: las prioridades alta y media llevan además
+  su etiqueta de texto, y "vencida" lleva icono y texto para lectores de
+  pantalla.
+- **Tema claro, oscuro o el del sistema**, seleccionable desde la barra
+  lateral. Con "sistema", cambiar el tema del SO se refleja al instante. La
+  preferencia es el único dato que la aplicación guarda en `localStorage`.
+- **Vistas por fecha** (Tareas, Hoy, Próximas, Completadas) construidas con los
+  filtros que la API ya ofrecía; "Hoy" incluye las tareas vencidas, que es lo
+  que se espera ver ahí.
+- **Gráficas del dashboard dibujadas en SVG a mano**, con paleta validada
+  contra contraste y daltonismo en ambos temas, leyenda y etiquetas directas, y
+  una vista de tabla alternativa en cada gráfica.
+- **Exportación CSV con BOM UTF-8** (para que Excel no destroce los acentos) y
+  con escape de fórmulas, de modo que un título como `=1+1` no se ejecute al
+  abrir el archivo.
 
 ## Seguridad
 
@@ -245,22 +322,32 @@ y está cubierto por los tests de integración (`backend/tests/integration`).
 
 ## Arquitectura y despliegue
 
-Ver `docs/reto-tecnico-fullstack-arquitectura.md` para el detalle completo
-(diagramas de componentes, seguridad, autenticación, rotación de refresh,
-autorización, modelo de datos, escalabilidad).
+Objetivo de producción: contenedores de frontend y backend en **Amazon ECS +
+Fargate** (sin Kubernetes, para no sobrearquitecturar), **Amazon RDS
+PostgreSQL**, **AWS Secrets Manager** para credenciales/secretos y **AWS WAF**
++ HTTPS obligatorio en el perímetro. El backend es stateless respecto al access
+token (JWT autocontenido), lo que permite múltiples réplicas detrás de un load
+balancer sin sesiones pegajosas.
 
-Resumen del objetivo de producción: contenedores de frontend y backend en
-**Amazon ECS + Fargate** (sin Kubernetes, para no sobrearquitecturar),
-**Amazon RDS PostgreSQL**, **AWS Secrets Manager** para credenciales/secretos
-y **AWS WAF** + HTTPS obligatorio en el perímetro. El backend es stateless
-respecto al access token (JWT autocontenido), lo que permite múltiples
-réplicas detrás de un load balancer sin sesiones pegajosas. La observabilidad
-avanzada (tracing, dashboards, alertas, DR) queda como recomendación futura,
-fuera del alcance de esta primera versión, según la especificación.
+Se eligió un **Modular Monolith** en lugar de microservicios: mantiene las
+transacciones simples, reduce infraestructura y conserva la separación por
+dominios dentro del propio código, de modo que extraer un módulo más adelante
+sigue siendo viable.
 
-## Fuera de alcance (explícito en la especificación)
+La observabilidad avanzada (tracing, dashboards, alertas, plan de recuperación
+ante desastres) queda como recomendación futura, fuera del alcance de esta
+primera versión: la arquitectura conserva las interfaces y la separación
+necesarias para incorporarla sin tocar el dominio de negocio.
 
-Roles/admin, dashboard visual, drag & drop, modo oscuro, exportación
-CSV/JSON, atajos de teclado, WebSockets, operaciones masivas, microservicios,
-Elasticsearch/OpenSearch, data warehouse, notificaciones, app móvil nativa,
-observabilidad avanzada (queda documentada como recomendación futura).
+## Alcance: reto vs. extras
+
+**Fuera de alcance, según la especificación del reto**: roles/admin, drag &
+drop, atajos de teclado, WebSockets, operaciones masivas, microservicios,
+Elasticsearch/OpenSearch, data warehouse, notificaciones, app móvil nativa y
+observabilidad avanzada.
+
+**Implementado por encima del reto**: tema claro/oscuro, dashboard de
+estadísticas y exportación CSV/JSON. La especificación los listaba como fuera
+de alcance; se añadieron de forma deliberada como extras, **sin tocar el
+backend, sin abrir endpoints nuevos y sin romper ninguna de las restricciones
+del reto**.

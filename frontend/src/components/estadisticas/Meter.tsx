@@ -3,7 +3,7 @@ interface MeterProps {
   valor: number | null;
 }
 
-/** Ratio contra un límite → medidor, no un donut de dos porciones (§5.3 de frontend-features.md). */
+/** Ratio contra un límite → medidor, no un donut de dos porciones. */
 export function Meter({ valor }: MeterProps) {
   return (
     <figure>

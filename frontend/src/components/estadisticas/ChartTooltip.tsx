@@ -7,7 +7,7 @@ interface ChartTooltipProps {
   children: ReactNode;
 }
 
-/** Div posicionado, no `title` nativo: tarda y no se puede estilar (§5.6 de frontend-features.md). */
+/** Div posicionado, no `title` nativo: tarda y no se puede estilar. */
 export function ChartTooltip({ xPct, children }: ChartTooltipProps) {
   const reducedMotion = useReducedMotion();
 

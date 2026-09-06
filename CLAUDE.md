@@ -12,10 +12,12 @@ Aplicación web de **gestión personal de tareas**: React (SPA) + Node/Express
 modificar sus propios recursos: la autorización es **ownership puro**,
 verificada en cada consulta contra el `usuario_id` del token.
 
-El repositorio implementa dos documentos de especificación que están en `docs/`
-y son la **fuente de verdad**: `reto-tecnico-fullstack-arquitectura.md` y
-`reto-tecnico-fullstack-especificacion-implementacion.md`. Si algo en el código
-contradice esos documentos, gana el documento.
+El repositorio implementa dos documentos de especificación del reto
+(`reto-tecnico-fullstack-arquitectura.md` y
+`reto-tecnico-fullstack-especificacion-implementacion.md`) que **no están
+versionados aquí**: se conservan fuera del repositorio. Sus decisiones ya están
+recogidas en este archivo y en el README; si necesitas un detalle que no
+aparezca en ninguno de los dos, pregunta en vez de deducirlo.
 
 Idioma: **todo en español** — UI, nombres de tablas y columnas, mensajes de
 error, comentarios y mensajes de commit. No traducir al inglés.
@@ -77,7 +79,7 @@ frontend/src/
 ├── pages/            LoginPage, RegisterPage, TasksPage
 └── types/            tipos compartidos del dominio
 
-docs/                 openapi.yaml, frontend-redesign.md, los 2 docs de especificación
+docs/openapi.yaml     contrato completo de la API
 ```
 
 **Flujo de una petición en el backend:** `routes` (auth + validación Zod) →
@@ -181,15 +183,31 @@ Detalle completo con request/response/errores: `docs/openapi.yaml`.
   `fetch` directamente.
 - Los hooks (`useTareas`, etc.) encapsulan estado + llamadas; `completar` hace
   **update optimista con rollback** si el servidor falla.
-- Rediseño visual: la especificación completa (tokens, primitivas, pantalla por
-  pantalla, criterios de aceptación) está en **`docs/frontend-redesign.md`**.
-  Si trabajas en la capa visual, ese documento manda.
-- Funcionalidades añadidas sobre el reto (tema claro/oscuro, dashboard de
-  estadísticas y exportación CSV/JSON) están especificadas en
-  **`docs/frontend-features.md`**, que presupone el rediseño ya aplicado.
+### Sistema de diseño (reglas que no se deducen leyendo el código)
 
-Jerarquía si dos documentos se contradicen: `CLAUDE.md` →
-`docs/frontend-features.md` → `docs/frontend-redesign.md`.
+- **Todos los tokens viven en `@theme` dentro de `src/index.css`.** El tema
+  oscuro redefine esas mismas variables bajo `:root[data-theme='dark']`. Ningún
+  componente escribe un color suelto: si falta un token, se añade ahí.
+- **El fondo de la tarjeta codifica la prioridad y solo la prioridad**: alta
+  rosa, media ámbar, baja sin tinte. Al completarse, la tarjeta **pierde el
+  tinte** y pasa a gris. La categoría se expresa en su chip, nunca en el fondo.
+- **El color nunca es el único canal**: las prioridades alta y media llevan
+  además su badge de texto, y "vencida" lleva icono más texto `sr-only`.
+- **La paleta de datos del dashboard (`--color-dato-*`) está validada** contra
+  contraste y daltonismo en ambos temas. No la ajustes a ojo: cambiar un color
+  obliga a revalidar el conjunto. El violeta de marca queda fuera de las
+  gráficas a propósito (es indistinguible del azul de serie).
+- **Formas del dashboard, ya decididas**: barra apilada horizontal para
+  prioridad (no un donut: los valores quedan próximos y los ángulos parecidos
+  se comparan mal), medidor para la tasa de finalización, barras horizontales
+  de un solo color para categoría, y área de una sola serie para la tendencia.
+- **Vidrio**: `backdrop-blur` fuerte solo en el cromo (sidebar, barra superior,
+  popover, modal); en las tarjetas, mínimo. Con 20 tarjetas en pantalla el blur
+  se paga caro y detrás solo hay un degradado suave.
+- **Tema**: tres estados (claro / oscuro / sistema), preferencia en
+  `localStorage` bajo `tarelli:tema`, y un script inline en `index.html` que
+  estampa `data-theme` antes del primer pintado para evitar el destello blanco.
+  Es el único uso de `localStorage` en la app.
 
 ## Trampas conocidas (leer antes de depurar)
 
@@ -266,9 +284,14 @@ y sin tocar la API**, y así deben presentarse en la entrega — como extras, no
 como parte del reto:
 
 - Toggle de tema claro / oscuro / sistema.
-- Dashboard de estadísticas personales (calculado en el cliente).
-- Exportación de tareas a CSV / JSON (generada en el cliente).
+- Dashboard de estadísticas personales (`/estadisticas`).
+- Exportación de tareas a CSV / JSON.
 
-Detalle completo en `docs/frontend-features.md`. **Lo que no cambia**: la lista
-de rutas sigue cerrada, el backend no se toca y estos extras no añaden
-dependencias nuevas al frontend.
+**Los tres se resuelven íntegramente en el cliente**: la lista de rutas sigue
+cerrada y el backend no se toca. El dashboard y la exportación se alimentan de
+`useTodasLasTareas`, que pagina `GET /api/tareas` (100 por página, tope de 10
+páginas) y avisa en la UI cuando el resultado queda truncado. En el CSV, dos
+detalles que no hay que perder al refactorizar: **BOM UTF-8** (sin él Excel en
+Windows destroza los acentos) y **escape anti-inyección** — un valor que empiece
+por `=`, `+`, `-` o `@` se prefija con apóstrofo para que Excel no lo ejecute
+como fórmula.

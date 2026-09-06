@@ -4,7 +4,7 @@ interface TablaDatosProps {
   filas: (string | number)[][];
 }
 
-/** Alternativa accesible obligatoria a cada gráfica (§5.8.3 de frontend-features.md). */
+/** Alternativa accesible obligatoria a cada gráfica. */
 export function TablaDatos({ caption, columnas, filas }: TablaDatosProps) {
   return (
     <div className="overflow-x-auto">

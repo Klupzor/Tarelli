@@ -5,7 +5,7 @@ interface DashboardCardProps {
   children: ReactNode;
 }
 
-/** Tarjeta de vidrio compartida por los bloques del dashboard (§5.2 de frontend-features.md). */
+/** Tarjeta de vidrio compartida por los bloques del dashboard. */
 export function DashboardCard({ className = '', children }: DashboardCardProps) {
   return (
     <div

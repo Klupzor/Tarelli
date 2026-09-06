@@ -10,6 +10,7 @@ import { TopBar } from '../components/TopBar';
 import { FiltersBar } from '../components/FiltersBar';
 import { TaskGrid } from '../components/TaskGrid';
 import { TaskFormModal } from '../components/TaskFormModal';
+import { ExportModal } from '../components/ExportModal';
 import { Pagination } from '../components/Pagination';
 import { EstadoCargando, EstadoError, EstadoVacio } from '../components/EstadoCarga';
 import { useToast } from '../components/ui/Toast';
@@ -109,6 +110,7 @@ export default function TasksPage() {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [tareaEditando, setTareaEditando] = useState<Tarea | null>(null);
+  const [modalExportarAbierto, setModalExportarAbierto] = useState(false);
 
   function abrirNuevaTarea() {
     setTareaEditando(null);
@@ -192,6 +194,7 @@ export default function TasksPage() {
               busquedaInput={busquedaInput}
               onBusquedaChange={setBusquedaInput}
               onChange={setFiltro}
+              onExportar={() => setModalExportarAbierto(true)}
             />
           </div>
 
@@ -230,6 +233,14 @@ export default function TasksPage() {
         etiquetas={etiquetasState.etiquetas}
         onCerrar={() => setModalAbierto(false)}
         onGuardar={handleGuardar}
+      />
+
+      <ExportModal
+        abierto={modalExportarAbierto}
+        onCerrar={() => setModalExportarAbierto(false)}
+        filtro={filtroConBusqueda}
+        hayFiltrosActivos={hayFiltrosActivos}
+        timezone={timezone}
       />
     </div>
   );

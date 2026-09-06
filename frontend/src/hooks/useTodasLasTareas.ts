@@ -19,17 +19,22 @@ interface ResultadoTodasLasTareas {
  * Trae TODAS las tareas que cumplen `filtro`, paginando el listado existente
  * (no hay endpoint de agregación). Solo se invoca cuando el consumidor
  * (dashboard, modal de exportación) monta: nunca al cargar la app.
+ *
+ * `activo` permite a un consumidor que vive siempre montado (el modal de
+ * exportación, que solo cambia de visibilidad) posponer la primera petición
+ * hasta que realmente se abre, sin tener que desmontarse.
  */
-export function useTodasLasTareas(filtro: TareasFiltro = {}): ResultadoTodasLasTareas {
+export function useTodasLasTareas(filtro: TareasFiltro = {}, activo = true): ResultadoTodasLasTareas {
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [total, setTotal] = useState(0);
   const [truncado, setTruncado] = useState(false);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(activo);
   const [error, setError] = useState<string | null>(null);
 
   const filtroKey = JSON.stringify(filtro);
 
   const recargar = useCallback(async () => {
+    if (!activo) return;
     setCargando(true);
     setError(null);
     try {
@@ -52,7 +57,7 @@ export function useTodasLasTareas(filtro: TareasFiltro = {}): ResultadoTodasLasT
       setCargando(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroKey]);
+  }, [filtroKey, activo]);
 
   useEffect(() => {
     recargar();

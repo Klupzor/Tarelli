@@ -24,9 +24,11 @@ export function Popover({ abierto, onCerrar, disparadorRef, children, titulo, cl
   useEffect(() => {
     if (!abierto) return undefined;
 
+    const disparador = disparadorRef.current;
+
     function posicionar() {
       if (!panelRef.current || !window.matchMedia(MEDIA_QUERY_MD).matches) return;
-      const rect = disparadorRef.current?.getBoundingClientRect();
+      const rect = disparador?.getBoundingClientRect();
       if (!rect) return;
       panelRef.current.style.top = `${rect.bottom + 8}px`;
       panelRef.current.style.right = `${Math.max(16, window.innerWidth - rect.right)}px`;
@@ -37,7 +39,7 @@ export function Popover({ abierto, onCerrar, disparadorRef, children, titulo, cl
 
     function onMouseDown(e: MouseEvent) {
       const objetivo = e.target as Node;
-      if (panelRef.current?.contains(objetivo) || disparadorRef.current?.contains(objetivo)) return;
+      if (panelRef.current?.contains(objetivo) || disparador?.contains(objetivo)) return;
       onCerrar();
     }
     document.addEventListener('mousedown', onMouseDown);
@@ -61,7 +63,7 @@ export function Popover({ abierto, onCerrar, disparadorRef, children, titulo, cl
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = overflowPrevio;
       cancelAnimationFrame(frame);
-      if (disparadorRef.current instanceof HTMLElement) disparadorRef.current.focus();
+      if (disparador instanceof HTMLElement) disparador.focus();
     };
   }, [abierto, disparadorRef, onCerrar]);
 

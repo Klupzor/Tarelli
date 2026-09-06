@@ -68,7 +68,7 @@ export function PriorityChart({ datos }: PriorityChartProps) {
         />
       ) : (
         <>
-          <div className="relative">
+          <div className="relative py-1.5">
             <svg
               viewBox={`0 0 ${ANCHO_VIEWBOX} ${ALTURA}`}
               preserveAspectRatio="none"
@@ -87,25 +87,22 @@ export function PriorityChart({ datos }: PriorityChartProps) {
                   <rect key={seg.prioridad} x={seg.x} y={0} width={seg.ancho} height={ALTURA} style={{ fill: COLOR[seg.prioridad] }} />
                 ))}
               </g>
-              {/* Área sensible más grande que la marca visible (12px), para ratón y foco de teclado. */}
-              {segmentos.map((seg) => (
-                <rect
-                  key={`hit-${seg.prioridad}`}
-                  x={seg.x}
-                  y={-6}
-                  width={seg.ancho}
-                  height={ALTURA + 12}
-                  fill="transparent"
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${seg.etiqueta}: ${seg.valor} tareas, ${Math.round((seg.valor / total) * 100)} por ciento`}
-                  onMouseEnter={() => setActivo(seg.prioridad)}
-                  onMouseLeave={() => setActivo(null)}
-                  onFocus={() => setActivo(seg.prioridad)}
-                  onBlur={() => setActivo(null)}
-                />
-              ))}
             </svg>
+            {/* Botones HTML reales (no rects SVG) para un foco de teclado fiable entre navegadores;
+                área sensible más alta que la marca visible de 12px. */}
+            {segmentos.map((seg) => (
+              <button
+                key={`hit-${seg.prioridad}`}
+                type="button"
+                aria-label={`${seg.etiqueta}: ${seg.valor} tareas, ${Math.round((seg.valor / total) * 100)} por ciento`}
+                className="absolute inset-y-0 rounded-[6px]"
+                style={{ left: `${(seg.x / ANCHO_VIEWBOX) * 100}%`, width: `${(seg.ancho / ANCHO_VIEWBOX) * 100}%` }}
+                onMouseEnter={() => setActivo(seg.prioridad)}
+                onMouseLeave={() => setActivo(null)}
+                onFocus={() => setActivo(seg.prioridad)}
+                onBlur={() => setActivo(null)}
+              />
+            ))}
             {segmentoActivo && (
               <ChartTooltip xPct={((segmentoActivo.x + segmentoActivo.ancho / 2) / ANCHO_VIEWBOX) * 100}>
                 {segmentoActivo.etiqueta}: <span className="tabular font-medium">{segmentoActivo.valor}</span> (

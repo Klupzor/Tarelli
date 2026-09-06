@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useRef, useState } from 'react';
 import { Check, SlidersHorizontal, X } from 'lucide-react';
 import type { Categoria, Etiqueta, Prioridad, TareasFiltro } from '../types';
 import { Select } from './ui/Select';
 import { Button } from './ui/Button';
+import { Badge } from './ui/Badge';
+import { SegmentedControl } from './ui/SegmentedControl';
+import { Popover } from './ui/Popover';
 
 interface Props {
   filtro: TareasFiltro;
@@ -14,28 +16,37 @@ interface Props {
   onChange: (filtro: TareasFiltro) => void;
 }
 
-const ESTADOS = [
+const ESTADOS: { valor: string; etiqueta: string }[] = [
   { valor: '', etiqueta: 'Todas' },
   { valor: 'false', etiqueta: 'Pendientes' },
   { valor: 'true', etiqueta: 'Completadas' },
 ];
 
+const PRIORIDADES: { valor: string; etiqueta: string }[] = [
+  { valor: '', etiqueta: 'Todas' },
+  { valor: 'alta', etiqueta: 'Alta' },
+  { valor: 'media', etiqueta: 'Media' },
+  { valor: 'baja', etiqueta: 'Baja' },
+];
+
 const OPCIONES_ORDEN = [
-  { valor: 'creado_en:desc', etiqueta: 'Más recientes' },
-  { valor: 'creado_en:asc', etiqueta: 'Más antiguas' },
-  { valor: 'fecha_vencimiento:asc', etiqueta: 'Vencimiento próximo' },
-  { valor: 'prioridad:desc', etiqueta: 'Prioridad (Z-A)' },
-  { valor: 'titulo:asc', etiqueta: 'Título (A-Z)' },
+  { valor: 'creado_en:desc', etiqueta: 'Ordenar por: Más recientes' },
+  { valor: 'creado_en:asc', etiqueta: 'Ordenar por: Más antiguas' },
+  { valor: 'fecha_vencimiento:asc', etiqueta: 'Ordenar por: Vencimiento próximo' },
+  { valor: 'prioridad:desc', etiqueta: 'Ordenar por: Prioridad (Z-A)' },
+  { valor: 'titulo:asc', etiqueta: 'Ordenar por: Título (A-Z)' },
 ];
 
 const FILTRO_INICIAL: TareasFiltro = { ordenar: 'creado_en', direccion: 'desc', page: 1, limit: 20 };
 
 export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBusquedaChange, onChange }: Props) {
-  const [panelAbierto, setPanelAbierto] = useState(false);
-  const reducedMotion = useReducedMotion();
+  const [popoverAbierto, setPopoverAbierto] = useState(false);
+  const disparadorRef = useRef<HTMLButtonElement>(null);
 
-  const estadoActual = filtro.completada === undefined ? '' : String(filtro.completada);
+  const estadoActual = (filtro.completada === undefined ? '' : String(filtro.completada)) as '' | 'false' | 'true';
   const etiquetasActivas = filtro.etiquetas ?? [];
+
+  const filtrosPopoverActivos = (filtro.prioridad ? 1 : 0) + (filtro.categoria ? 1 : 0) + etiquetasActivas.length;
 
   const hayFiltrosActivos = Boolean(
     filtro.completada !== undefined ||
@@ -74,160 +85,111 @@ export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBus
     onChange({ ...filtro, etiquetas: nuevas.length ? nuevas : undefined, page: 1 });
   }
 
-  const chipsEtiquetas = (
-    <>
-      <div className="flex flex-wrap gap-1.5">
-        {etiquetas.map((etq) => {
-          const activa = etiquetasActivas.includes(etq.id);
-          return (
-            <button
-              key={etq.id}
-              type="button"
-              aria-pressed={activa}
-              onClick={() => toggleEtiqueta(etq.id)}
-              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12.5px] font-medium transition-colors duration-120 ${
-                activa
-                  ? 'border-brand-line bg-brand-soft text-brand'
-                  : 'border-line bg-surface text-ink-2 hover:bg-surface-2'
-              }`}
-            >
-              {activa && <Check size={12} strokeWidth={2.5} aria-hidden="true" />}#{etq.nombre}
-            </button>
-          );
-        })}
-      </div>
-      {etiquetasActivas.length >= 2 && (
-        <p className="mt-1.5 text-xs text-ink-3">Se muestran las tareas que tienen todas las etiquetas seleccionadas.</p>
-      )}
-    </>
-  );
-
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex h-8 shrink-0 items-center rounded-field bg-surface-2 p-0.5">
-          {ESTADOS.map((estado) => (
-            <button
-              key={estado.valor}
-              type="button"
-              aria-pressed={estadoActual === estado.valor}
-              onClick={() => cambiarEstado(estado.valor)}
-              className={`relative h-7 rounded-[6px] px-3 text-[13px] font-medium transition-colors duration-120 ${
-                estadoActual === estado.valor ? 'text-ink' : 'text-ink-2 hover:text-ink'
-              }`}
-            >
-              {estadoActual === estado.valor && (
-                <motion.span
-                  layoutId="filtro-segmento-activo"
-                  className="absolute inset-0 rounded-[6px] bg-surface shadow-xs"
-                  transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
-                />
-              )}
-              <span className="relative">{estado.etiqueta}</span>
-            </button>
+    <div className="flex flex-wrap items-center gap-2">
+      <SegmentedControl
+        aria-label="Filtrar por estado"
+        layoutId="filtro-segmento-estado"
+        opciones={ESTADOS.map((e) => ({ valor: e.valor, etiqueta: e.etiqueta }))}
+        valor={estadoActual}
+        onChange={cambiarEstado}
+      />
+
+      <Button
+        ref={disparadorRef}
+        variant="secondary"
+        size="sm"
+        icon={SlidersHorizontal}
+        onClick={() => setPopoverAbierto((v) => !v)}
+        aria-expanded={popoverAbierto}
+      >
+        Filtros
+        {filtrosPopoverActivos > 0 && (
+          <Badge tone="brand" className="ml-1">
+            {filtrosPopoverActivos}
+          </Badge>
+        )}
+      </Button>
+
+      <div className="ml-auto">
+        <Select compact value={`${filtro.ordenar ?? 'creado_en'}:${filtro.direccion ?? 'desc'}`} onChange={(e) => cambiarOrden(e.target.value)}>
+          {OPCIONES_ORDEN.map((o) => (
+            <option key={o.valor} value={o.valor}>
+              {o.etiqueta}
+            </option>
           ))}
-        </div>
+        </Select>
+      </div>
 
-        <button
-          type="button"
-          onClick={() => setPanelAbierto((v) => !v)}
-          aria-expanded={panelAbierto}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-field border border-line bg-surface px-3 text-[13px] font-medium text-ink-2 hover:bg-surface-2 md:hidden"
-        >
-          <SlidersHorizontal size={16} strokeWidth={1.75} aria-hidden="true" />
-          Filtros
-        </button>
+      <Popover
+        abierto={popoverAbierto}
+        onCerrar={() => setPopoverAbierto(false)}
+        disparadorRef={disparadorRef}
+        titulo="Filtros"
+      >
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Prioridad</p>
+            <SegmentedControl
+              aria-label="Filtrar por prioridad"
+              layoutId="filtro-segmento-prioridad"
+              opciones={PRIORIDADES}
+              valor={filtro.prioridad ?? ''}
+              onChange={cambiarPrioridad}
+              className="w-full"
+            />
+          </div>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Select compact value={filtro.prioridad ?? ''} onChange={(e) => cambiarPrioridad(e.target.value)}>
-            <option value="">Cualquier prioridad</option>
-            <option value="alta">Alta</option>
-            <option value="media">Media</option>
-            <option value="baja">Baja</option>
-          </Select>
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Categoría</p>
+            <Select compact value={filtro.categoria ?? ''} onChange={(e) => cambiarCategoria(e.target.value)} className="w-full">
+              <option value="">Cualquier categoría</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-          <Select compact value={filtro.categoria ?? ''} onChange={(e) => cambiarCategoria(e.target.value)}>
-            <option value="">Cualquier categoría</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </Select>
-
-          <Select
-            compact
-            value={`${filtro.ordenar ?? 'creado_en'}:${filtro.direccion ?? 'desc'}`}
-            onChange={(e) => cambiarOrden(e.target.value)}
-          >
-            {OPCIONES_ORDEN.map((o) => (
-              <option key={o.valor} value={o.valor}>
-                {o.etiqueta}
-              </option>
-            ))}
-          </Select>
+          {etiquetas.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Etiquetas</p>
+              <div className="flex flex-wrap gap-1.5">
+                {etiquetas.map((etq) => {
+                  const activa = etiquetasActivas.includes(etq.id);
+                  return (
+                    <button
+                      key={etq.id}
+                      type="button"
+                      aria-pressed={activa}
+                      onClick={() => toggleEtiqueta(etq.id)}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12.5px] font-medium transition-colors duration-120 ${
+                        activa
+                          ? 'border-brand-line bg-brand-soft text-brand'
+                          : 'border-line bg-surface text-ink-2 hover:bg-surface-2'
+                      }`}
+                    >
+                      {activa && <Check size={12} strokeWidth={2.5} aria-hidden="true" />}#{etq.nombre}
+                    </button>
+                  );
+                })}
+              </div>
+              {etiquetasActivas.length >= 2 && (
+                <p className="mt-1.5 text-xs text-ink-3">
+                  Se muestran las tareas que tienen todas las etiquetas seleccionadas.
+                </p>
+              )}
+            </div>
+          )}
 
           {hayFiltrosActivos && (
-            <Button variant="ghost" size="sm" icon={X} onClick={limpiarFiltros}>
-              Limpiar
+            <Button variant="ghost" size="sm" icon={X} onClick={limpiarFiltros} className="w-full">
+              Limpiar filtros
             </Button>
           )}
         </div>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {panelAbierto && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reducedMotion ? 0 : 0.18 }}
-            className="md:hidden"
-          >
-            <div className="flex flex-col gap-2 pt-1">
-              <div className="grid grid-cols-2 gap-2">
-                <Select compact value={filtro.prioridad ?? ''} onChange={(e) => cambiarPrioridad(e.target.value)}>
-                  <option value="">Cualquier prioridad</option>
-                  <option value="alta">Alta</option>
-                  <option value="media">Media</option>
-                  <option value="baja">Baja</option>
-                </Select>
-
-                <Select compact value={filtro.categoria ?? ''} onChange={(e) => cambiarCategoria(e.target.value)}>
-                  <option value="">Cualquier categoría</option>
-                  {categorias.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <Select
-                compact
-                value={`${filtro.ordenar ?? 'creado_en'}:${filtro.direccion ?? 'desc'}`}
-                onChange={(e) => cambiarOrden(e.target.value)}
-              >
-                {OPCIONES_ORDEN.map((o) => (
-                  <option key={o.valor} value={o.valor}>
-                    {o.etiqueta}
-                  </option>
-                ))}
-              </Select>
-
-              {etiquetas.length > 0 && chipsEtiquetas}
-
-              {hayFiltrosActivos && (
-                <Button variant="ghost" size="sm" icon={X} onClick={limpiarFiltros} className="w-full">
-                  Limpiar filtros
-                </Button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {etiquetas.length > 0 && <div className="hidden md:block">{chipsEtiquetas}</div>}
+      </Popover>
     </div>
   );
 }

@@ -1,15 +1,39 @@
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { CalendarDays, Check, CheckCircle, ChevronRight, Clock, Folder, ListChecks, LogOut, Plus, Tag, Trash2 } from 'lucide-react';
+import {
+  CalendarDays,
+  Check,
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  Folder,
+  ListChecks,
+  LogOut,
+  Monitor,
+  Moon,
+  Plus,
+  Sun,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Categoria, Etiqueta, Usuario, VistaRapida } from '../types';
 import { ApiError } from '../api/client';
 import { colorCategoria, PUNTO_COLOR_CATEGORIA } from '../utils/colorCategoria';
+import { useTheme } from '../context/ThemeContext';
+import type { PreferenciaTema } from '../context/ThemeContext';
 import { LogoMark } from './ui/LogoMark';
 import { IconButton } from './ui/IconButton';
 import { ConfirmDialog } from './ui/ConfirmDialog';
+import { SegmentedControl } from './ui/SegmentedControl';
 import { useToast } from './ui/Toast';
+
+const OPCIONES_TEMA: { valor: PreferenciaTema; etiqueta: string; icono: LucideIcon }[] = [
+  { valor: 'claro', etiqueta: 'Tema claro', icono: Sun },
+  { valor: 'oscuro', etiqueta: 'Tema oscuro', icono: Moon },
+  { valor: 'sistema', etiqueta: 'Seguir al sistema', icono: Monitor },
+];
 
 interface Props {
   categorias: Categoria[];
@@ -159,6 +183,7 @@ function SidebarContenido({
   onSeleccionarVista,
 }: ContenidoProps) {
   const { mostrarToast } = useToast();
+  const { preferencia, setPreferencia } = useTheme();
   const reducedMotion = Boolean(useReducedMotion());
   const [categoriasAbiertas, setCategoriasAbiertas] = useState(false);
   const [etiquetasAbiertas, setEtiquetasAbiertas] = useState(false);
@@ -332,15 +357,25 @@ function SidebarContenido({
         </SeccionColapsable>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2.5 border-t border-line/70 px-4 py-3">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[12px] font-semibold text-brand">
-          {usuario ? obtenerIniciales(usuario.nombre) : '?'}
+      <div className="flex shrink-0 flex-col gap-2.5 border-t border-line/70 px-4 py-3">
+        <SegmentedControl
+          aria-label="Tema de la aplicación"
+          layoutId="tema-segmento"
+          opciones={OPCIONES_TEMA}
+          valor={preferencia}
+          onChange={setPreferencia}
+          className="self-start"
+        />
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[12px] font-semibold text-brand">
+            {usuario ? obtenerIniciales(usuario.nombre) : '?'}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-medium text-ink">{usuario?.nombre}</p>
+            <p className="truncate text-xs text-ink-3">{usuario?.email}</p>
+          </div>
+          <IconButton icon={LogOut} size="sm" aria-label="Cerrar sesión" onClick={onLogout} />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium text-ink">{usuario?.nombre}</p>
-          <p className="truncate text-xs text-ink-3">{usuario?.email}</p>
-        </div>
-        <IconButton icon={LogOut} size="sm" aria-label="Cerrar sesión" onClick={onLogout} />
       </div>
 
       <ConfirmDialog

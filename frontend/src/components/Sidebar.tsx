@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { CalendarDays, CheckCircle2, ListChecks, LogOut, Plus, Sun, Trash2 } from 'lucide-react';
+import { CalendarDays, Check, CheckCircle, ChevronRight, Clock, Folder, ListChecks, LogOut, Plus, Tag, Trash2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Categoria, Etiqueta, Usuario, VistaRapida } from '../types';
-import type { ConteosTareas } from '../hooks/useConteosTareas';
 import { ApiError } from '../api/client';
-import { obtenerColorCategoria } from '../utils/categoriaColor';
+import { colorCategoria, PUNTO_COLOR_CATEGORIA } from '../utils/colorCategoria';
 import { LogoMark } from './ui/LogoMark';
 import { IconButton } from './ui/IconButton';
 import { ConfirmDialog } from './ui/ConfirmDialog';
@@ -18,12 +17,15 @@ interface Props {
   onCrearCategoria: (nombre: string) => Promise<unknown>;
   onEliminarCategoria: (id: string) => Promise<void>;
   onCrearEtiqueta: (nombre: string) => Promise<unknown>;
+  onFiltrarCategoria: (id: string) => void;
+  onFiltrarEtiqueta: (id: string) => void;
+  categoriaActiva?: string;
+  etiquetasActivas: string[];
   usuario: Usuario | null;
   onLogout: () => void;
   abiertoMovil: boolean;
   onCerrarMovil: () => void;
   vistaActiva: VistaRapida;
-  conteos: ConteosTareas;
   onSeleccionarVista: (vista: VistaRapida) => void;
 }
 
@@ -33,46 +35,110 @@ function obtenerIniciales(nombre: string): string {
   return iniciales || '?';
 }
 
+const VISTAS: { valor: VistaRapida; etiqueta: string; icono: LucideIcon }[] = [
+  { valor: 'todas', etiqueta: 'Tareas', icono: ListChecks },
+  { valor: 'hoy', etiqueta: 'Hoy', icono: CalendarDays },
+  { valor: 'proximas', etiqueta: 'Próximas', icono: Clock },
+  { valor: 'completadas', etiqueta: 'Completadas', icono: CheckCircle },
+];
+
 interface ContenidoProps {
   categorias: Categoria[];
   etiquetas: Etiqueta[];
   onCrearCategoria: (nombre: string) => Promise<unknown>;
   onEliminarCategoria: (id: string) => Promise<void>;
   onCrearEtiqueta: (nombre: string) => Promise<unknown>;
+  onFiltrarCategoria: (id: string) => void;
+  onFiltrarEtiqueta: (id: string) => void;
+  categoriaActiva?: string;
+  etiquetasActivas: string[];
   usuario: Usuario | null;
   onLogout: () => void;
   onAccionCompletada: () => void;
   vistaActiva: VistaRapida;
-  conteos: ConteosTareas;
   onSeleccionarVista: (vista: VistaRapida) => void;
 }
 
-interface ItemVistaProps {
+function ItemVista({
+  icon: Icon,
+  etiqueta,
+  activo,
+  onClick,
+  reducedMotion,
+}: {
   icon: LucideIcon;
   etiqueta: string;
-  cantidad?: number;
   activo: boolean;
   onClick: () => void;
-}
-
-function ItemVista({ icon: Icon, etiqueta, cantidad, activo, onClick }: ItemVistaProps) {
+  reducedMotion: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-current={activo ? 'page' : undefined}
-      className={`flex h-9 w-full items-center justify-between rounded-field px-2.5 text-sm font-medium transition-colors duration-120 ${
-        activo ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
+      className={`relative flex h-9 w-full items-center gap-2 rounded-field px-2.5 text-[13.5px] font-medium transition-colors duration-120 ${
+        activo ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-surface-2/70'
       }`}
     >
-      <span className="flex items-center gap-2">
-        <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
-        {etiqueta}
-      </span>
-      {cantidad !== undefined && (
-        <span className={`tabular text-xs ${activo ? 'text-brand' : 'text-ink-3'}`}>{cantidad}</span>
+      {activo && (
+        <motion.span
+          layoutId="vista-activa-barra"
+          className="absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-full bg-brand"
+          transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+        />
       )}
+      <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+      {etiqueta}
     </button>
+  );
+}
+
+function SeccionColapsable({
+  icon: Icon,
+  titulo,
+  abierta,
+  onToggle,
+  reducedMotion,
+  children,
+}: {
+  icon: LucideIcon;
+  titulo: string;
+  abierta: boolean;
+  onToggle: () => void;
+  reducedMotion: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={abierta}
+        className="flex h-8 w-full items-center gap-2 rounded-field px-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3 hover:bg-surface-2/70"
+      >
+        <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+        <span className="flex-1 text-left">{titulo}</span>
+        <ChevronRight
+          size={14}
+          strokeWidth={1.75}
+          aria-hidden="true"
+          className={`transition-transform duration-180 ${abierta ? 'rotate-90' : ''}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {abierta && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.18 }}
+          >
+            <div className="pb-1 pt-1">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -82,14 +148,20 @@ function SidebarContenido({
   onCrearCategoria,
   onEliminarCategoria,
   onCrearEtiqueta,
+  onFiltrarCategoria,
+  onFiltrarEtiqueta,
+  categoriaActiva,
+  etiquetasActivas,
   usuario,
   onLogout,
   onAccionCompletada,
   vistaActiva,
-  conteos,
   onSeleccionarVista,
 }: ContenidoProps) {
   const { mostrarToast } = useToast();
+  const reducedMotion = Boolean(useReducedMotion());
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState(false);
+  const [etiquetasAbiertas, setEtiquetasAbiertas] = useState(false);
   const [nuevaCategoria, setNuevaCategoria] = useState('');
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState('');
   const [categoriaConfirmando, setCategoriaConfirmando] = useState<Categoria | null>(null);
@@ -101,7 +173,6 @@ function SidebarContenido({
     try {
       await onCrearCategoria(nuevaCategoria.trim());
       setNuevaCategoria('');
-      onAccionCompletada();
     } catch (err) {
       mostrarToast({
         tono: 'danger',
@@ -116,7 +187,6 @@ function SidebarContenido({
     try {
       await onCrearEtiqueta(nuevaEtiqueta.trim());
       setNuevaEtiqueta('');
-      onAccionCompletada();
     } catch (err) {
       mostrarToast({
         tono: 'danger',
@@ -131,7 +201,6 @@ function SidebarContenido({
     try {
       await onEliminarCategoria(categoriaConfirmando.id);
       setCategoriaConfirmando(null);
-      onAccionCompletada();
     } catch (err) {
       mostrarToast({
         tono: 'danger',
@@ -144,63 +213,68 @@ function SidebarContenido({
 
   return (
     <>
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-line px-4">
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-line/70 px-4">
         <LogoMark size={28} />
         <span className="text-[15px] font-semibold text-ink">Tarelli</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-        <nav className="mb-6 flex flex-col gap-0.5">
-          <ItemVista
-            icon={ListChecks}
-            etiqueta="Tareas"
-            activo={vistaActiva === 'todas'}
-            onClick={() => onSeleccionarVista('todas')}
-          />
-          <ItemVista
-            icon={Sun}
-            etiqueta="Hoy"
-            cantidad={conteos.hoy}
-            activo={vistaActiva === 'hoy'}
-            onClick={() => onSeleccionarVista('hoy')}
-          />
-          <ItemVista
-            icon={CalendarDays}
-            etiqueta="Próximas"
-            cantidad={conteos.proximas}
-            activo={vistaActiva === 'proximas'}
-            onClick={() => onSeleccionarVista('proximas')}
-          />
-          <ItemVista
-            icon={CheckCircle2}
-            etiqueta="Completados"
-            cantidad={conteos.completadas}
-            activo={vistaActiva === 'completadas'}
-            onClick={() => onSeleccionarVista('completadas')}
-          />
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        <nav className="mb-3 flex flex-col gap-0.5">
+          {VISTAS.map((vista) => (
+            <ItemVista
+              key={vista.valor}
+              icon={vista.icono}
+              etiqueta={vista.etiqueta}
+              activo={vistaActiva === vista.valor}
+              onClick={() => {
+                onSeleccionarVista(vista.valor);
+                onAccionCompletada();
+              }}
+              reducedMotion={reducedMotion}
+            />
+          ))}
         </nav>
 
-        <section className="mb-6">
-          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Categorías</h2>
+        <hr className="mx-1 mb-3 border-line/70" />
+
+        <SeccionColapsable
+          icon={Folder}
+          titulo="Categorías"
+          abierta={categoriasAbiertas}
+          onToggle={() => setCategoriasAbiertas((v) => !v)}
+          reducedMotion={reducedMotion}
+        >
           <ul className="flex flex-col gap-0.5">
             {categorias.map((c) => (
               <li
                 key={c.id}
-                className="group flex h-8 items-center justify-between gap-1 rounded-field px-2 hover:bg-surface-2"
+                className={`group flex h-8 items-center gap-1 rounded-field px-2 ${
+                  categoriaActiva === c.id ? 'bg-brand-soft' : 'hover:bg-surface-2/70'
+                }`}
               >
-                <span className="flex min-w-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onFiltrarCategoria(c.id);
+                    onAccionCompletada();
+                  }}
+                  aria-pressed={categoriaActiva === c.id}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                >
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${obtenerColorCategoria(c.id).punto}`}
+                    className={`h-2 w-2 shrink-0 rounded-full ${PUNTO_COLOR_CATEGORIA[colorCategoria(c.id)]}`}
                     aria-hidden="true"
                   />
-                  <span className="truncate text-sm text-ink">{c.nombre}</span>
-                </span>
+                  <span className={`truncate text-sm ${categoriaActiva === c.id ? 'font-medium text-brand' : 'text-ink'}`}>
+                    {c.nombre}
+                  </span>
+                </button>
                 <IconButton
                   icon={Trash2}
                   size="sm"
                   variant="danger"
                   aria-label={`Eliminar categoría ${c.nombre}`}
-                  className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+                  className="opacity-0 group-hover:opacity-100 focus-within:opacity-100"
                   onClick={() => setCategoriaConfirmando(c)}
                 />
               </li>
@@ -212,38 +286,53 @@ function SidebarContenido({
               value={nuevaCategoria}
               onChange={(e) => setNuevaCategoria(e.target.value)}
               placeholder="Nueva categoría"
-              className="h-8 min-w-0 flex-1 rounded-field border border-line bg-surface px-2.5 text-[13px] text-ink placeholder:text-ink-3 focus:border-brand"
+              className="h-8 min-w-0 flex-1 rounded-field border border-line bg-surface/80 px-2.5 text-[13px] text-ink placeholder:text-ink-3 focus:border-brand"
             />
             <IconButton icon={Plus} size="sm" variant="secondary" aria-label="Crear categoría" type="submit" />
           </form>
-        </section>
+        </SeccionColapsable>
 
-        <section>
-          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-3">Etiquetas</h2>
-          <div className="flex flex-wrap gap-1.5">
-            {etiquetas.map((e) => (
-              <span
-                key={e.id}
-                className="rounded-full border border-line bg-surface px-2 py-0.5 text-[12.5px] text-ink-2"
-              >
-                #{e.nombre}
-              </span>
-            ))}
+        <SeccionColapsable
+          icon={Tag}
+          titulo="Etiquetas"
+          abierta={etiquetasAbiertas}
+          onToggle={() => setEtiquetasAbiertas((v) => !v)}
+          reducedMotion={reducedMotion}
+        >
+          <div className="flex flex-wrap gap-1.5 px-1">
+            {etiquetas.map((e) => {
+              const activa = etiquetasActivas.includes(e.id);
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  aria-pressed={activa}
+                  onClick={() => onFiltrarEtiqueta(e.id)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-medium ${
+                    activa
+                      ? 'border-brand-line bg-brand-soft text-brand'
+                      : 'border-line bg-surface/80 text-ink-2 hover:bg-surface-2/70'
+                  }`}
+                >
+                  {activa && <Check size={11} strokeWidth={2.5} aria-hidden="true" />}#{e.nombre}
+                </button>
+              );
+            })}
             {etiquetas.length === 0 && <p className="text-sm text-ink-3">Sin etiquetas aún.</p>}
           </div>
-          <form onSubmit={crearEtiqueta} className="mt-2 flex gap-1.5">
+          <form onSubmit={crearEtiqueta} className="mt-2 flex gap-1.5 px-1">
             <input
               value={nuevaEtiqueta}
               onChange={(e) => setNuevaEtiqueta(e.target.value)}
               placeholder="Nueva etiqueta"
-              className="h-8 min-w-0 flex-1 rounded-field border border-line bg-surface px-2.5 text-[13px] text-ink placeholder:text-ink-3 focus:border-brand"
+              className="h-8 min-w-0 flex-1 rounded-field border border-line bg-surface/80 px-2.5 text-[13px] text-ink placeholder:text-ink-3 focus:border-brand"
             />
             <IconButton icon={Plus} size="sm" variant="secondary" aria-label="Crear etiqueta" type="submit" />
           </form>
-        </section>
+        </SeccionColapsable>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2.5 border-t border-line px-4 py-3">
+      <div className="flex shrink-0 items-center gap-2.5 border-t border-line/70 px-4 py-3">
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[12px] font-semibold text-brand">
           {usuario ? obtenerIniciales(usuario.nombre) : '?'}
         </div>
@@ -273,7 +362,7 @@ export function Sidebar({ abiertoMovil, onCerrarMovil, ...contenido }: Props) {
 
   return (
     <>
-      <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 flex-col border-r border-line bg-surface lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line/70 bg-surface/70 backdrop-blur-xl lg:flex">
         <SidebarContenido {...contenido} onAccionCompletada={() => {}} />
       </aside>
 
@@ -300,7 +389,7 @@ function DrawerMovil({
   return (
     <div className="lg:hidden" onKeyDown={(e) => e.key === 'Escape' && onCerrar()}>
       <motion.div
-        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+        className="fixed inset-0 z-40 bg-ink/20 backdrop-blur-[2px]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -309,7 +398,7 @@ function DrawerMovil({
         aria-hidden="true"
       />
       <motion.aside
-        className="fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-surface shadow-lg"
+        className="fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-line/70 bg-surface/90 shadow-lg backdrop-blur-xl"
         initial={{ x: reducedMotion ? 0 : -280 }}
         animate={{ x: 0 }}
         exit={{ x: reducedMotion ? 0 : -280 }}

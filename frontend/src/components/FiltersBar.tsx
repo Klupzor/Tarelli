@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { Check, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Check, SlidersHorizontal, X } from 'lucide-react';
 import type { Categoria, Etiqueta, Prioridad, TareasFiltro } from '../types';
-import { Input } from './ui/Input';
-import { IconButton } from './ui/IconButton';
 import { Select } from './ui/Select';
 import { Button } from './ui/Button';
 
@@ -107,21 +105,6 @@ export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBus
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="min-w-[160px] flex-1 md:hidden">
-          <Input
-            icon={Search}
-            placeholder="Buscar tareas…"
-            value={busquedaInput}
-            onChange={(e) => onBusquedaChange(e.target.value)}
-            aria-label="Buscar tareas"
-            trailing={
-              busquedaInput ? (
-                <IconButton icon={X} size="sm" aria-label="Limpiar búsqueda" onClick={() => onBusquedaChange('')} />
-              ) : undefined
-            }
-          />
-        </div>
-
         <div className="inline-flex h-8 shrink-0 items-center rounded-field bg-surface-2 p-0.5">
           {ESTADOS.map((estado) => (
             <button

@@ -5,6 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tarelli — Gestión de tareas</title>
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('tarelli:tema') || 'sistema';
+          var oscuro =
+            pref === 'oscuro' ||
+            (pref === 'sistema' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', oscuro ? 'dark' : 'light');
+          document.documentElement.style.colorScheme = oscuro ? 'dark' : 'light';
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -11,7 +11,7 @@ export function EstadoCargando() {
       {Array.from({ length: 8 }).map((_, i) => (
         <li
           key={i}
-          className="flex min-h-[168px] flex-col gap-3 rounded-card border border-line bg-surface/72 p-4 backdrop-blur-sm"
+          className="flex min-h-[168px] flex-col gap-3 rounded-card border border-line bg-surface/72 oscuro:bg-surface/85 p-4 backdrop-blur-sm"
         >
           <div className="flex items-start justify-between">
             <Skeleton className="h-5 w-5 shrink-0 rounded-[7px]" aria-hidden="true" />
@@ -44,7 +44,7 @@ export function EstadoVacio({ variante, onCrearTarea, onLimpiarFiltros }: Estado
   const Icono = esSinFiltros ? ListChecks : Search;
 
   return (
-    <div className="flex flex-col items-center gap-3 rounded-card border border-line/70 bg-surface/70 px-6 py-14 text-center backdrop-blur-sm">
+    <div className="flex flex-col items-center gap-3 rounded-card border border-line/70 bg-surface/70 oscuro:bg-surface/85 px-6 py-14 text-center backdrop-blur-sm">
       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-soft text-brand">
         <Icono size={20} strokeWidth={1.75} aria-hidden="true" />
       </div>

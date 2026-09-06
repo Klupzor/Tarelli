@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
-import { Check, SlidersHorizontal, X } from 'lucide-react';
+import { Check, Download, SlidersHorizontal, X } from 'lucide-react';
 import type { Categoria, Etiqueta, Prioridad, TareasFiltro } from '../types';
 import { Select } from './ui/Select';
 import { Button } from './ui/Button';
+import { IconButton } from './ui/IconButton';
 import { Badge } from './ui/Badge';
 import { SegmentedControl } from './ui/SegmentedControl';
 import { Popover } from './ui/Popover';
@@ -14,6 +15,7 @@ interface Props {
   busquedaInput: string;
   onBusquedaChange: (valor: string) => void;
   onChange: (filtro: TareasFiltro) => void;
+  onExportar: () => void;
 }
 
 const ESTADOS: { valor: string; etiqueta: string }[] = [
@@ -39,7 +41,7 @@ const OPCIONES_ORDEN = [
 
 const FILTRO_INICIAL: TareasFiltro = { ordenar: 'creado_en', direccion: 'desc', page: 1, limit: 20 };
 
-export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBusquedaChange, onChange }: Props) {
+export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBusquedaChange, onChange, onExportar }: Props) {
   const [popoverAbierto, setPopoverAbierto] = useState(false);
   const disparadorRef = useRef<HTMLButtonElement>(null);
 
@@ -94,6 +96,15 @@ export function FiltersBar({ filtro, categorias, etiquetas, busquedaInput, onBus
         valor={estadoActual}
         onChange={cambiarEstado}
       />
+
+      <span className="hidden md:inline-flex">
+        <Button variant="secondary" size="sm" icon={Download} onClick={onExportar}>
+          Exportar
+        </Button>
+      </span>
+      <span className="md:hidden">
+        <IconButton icon={Download} size="sm" variant="secondary" aria-label="Exportar tareas" onClick={onExportar} />
+      </span>
 
       <Button
         ref={disparadorRef}

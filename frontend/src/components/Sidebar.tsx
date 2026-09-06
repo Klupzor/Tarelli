@@ -1,15 +1,41 @@
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { CalendarDays, Check, CheckCircle, ChevronRight, Clock, Folder, ListChecks, LogOut, Plus, Tag, Trash2 } from 'lucide-react';
+import {
+  BarChart3,
+  CalendarDays,
+  Check,
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  Folder,
+  ListChecks,
+  LogOut,
+  Monitor,
+  Moon,
+  Plus,
+  Sun,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Categoria, Etiqueta, Usuario, VistaRapida } from '../types';
 import { ApiError } from '../api/client';
 import { colorCategoria, PUNTO_COLOR_CATEGORIA } from '../utils/colorCategoria';
+import { useTheme } from '../context/ThemeContext';
+import type { PreferenciaTema } from '../context/ThemeContext';
 import { LogoMark } from './ui/LogoMark';
 import { IconButton } from './ui/IconButton';
 import { ConfirmDialog } from './ui/ConfirmDialog';
+import { SegmentedControl } from './ui/SegmentedControl';
 import { useToast } from './ui/Toast';
+
+const OPCIONES_TEMA: { valor: PreferenciaTema; etiqueta: string; icono: LucideIcon }[] = [
+  { valor: 'claro', etiqueta: 'Tema claro', icono: Sun },
+  { valor: 'oscuro', etiqueta: 'Tema oscuro', icono: Moon },
+  { valor: 'sistema', etiqueta: 'Seguir al sistema', icono: Monitor },
+];
 
 interface Props {
   categorias: Categoria[];
@@ -25,7 +51,8 @@ interface Props {
   onLogout: () => void;
   abiertoMovil: boolean;
   onCerrarMovil: () => void;
-  vistaActiva: VistaRapida;
+  /** `undefined` fuera de `/`, donde ninguna vista rápida aplica (p. ej. en /estadisticas). */
+  vistaActiva?: VistaRapida;
   onSeleccionarVista: (vista: VistaRapida) => void;
 }
 
@@ -55,7 +82,8 @@ interface ContenidoProps {
   usuario: Usuario | null;
   onLogout: () => void;
   onAccionCompletada: () => void;
-  vistaActiva: VistaRapida;
+  /** `undefined` fuera de `/`, donde ninguna vista rápida aplica (p. ej. en /estadisticas). */
+  vistaActiva?: VistaRapida;
   onSeleccionarVista: (vista: VistaRapida) => void;
 }
 
@@ -91,6 +119,45 @@ function ItemVista({
       <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
       {etiqueta}
     </button>
+  );
+}
+
+/** Igual que `ItemVista`, pero navega a una ruta real en vez de fijar un filtro local. */
+function ItemVistaEnlace({
+  icon: Icon,
+  etiqueta,
+  to,
+  onNavegar,
+  reducedMotion,
+}: {
+  icon: LucideIcon;
+  etiqueta: string;
+  to: string;
+  onNavegar: () => void;
+  reducedMotion: boolean;
+}) {
+  const location = useLocation();
+  const activo = location.pathname === to;
+
+  return (
+    <Link
+      to={to}
+      onClick={onNavegar}
+      aria-current={activo ? 'page' : undefined}
+      className={`relative flex h-9 w-full items-center gap-2 rounded-field px-2.5 text-[13.5px] font-medium transition-colors duration-120 ${
+        activo ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-surface-2/70'
+      }`}
+    >
+      {activo && (
+        <motion.span
+          layoutId="vista-activa-barra"
+          className="absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-full bg-brand"
+          transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+        />
+      )}
+      <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+      {etiqueta}
+    </Link>
   );
 }
 
@@ -159,6 +226,7 @@ function SidebarContenido({
   onSeleccionarVista,
 }: ContenidoProps) {
   const { mostrarToast } = useToast();
+  const { preferencia, setPreferencia } = useTheme();
   const reducedMotion = Boolean(useReducedMotion());
   const [categoriasAbiertas, setCategoriasAbiertas] = useState(false);
   const [etiquetasAbiertas, setEtiquetasAbiertas] = useState(false);
@@ -233,6 +301,13 @@ function SidebarContenido({
               reducedMotion={reducedMotion}
             />
           ))}
+          <ItemVistaEnlace
+            icon={BarChart3}
+            etiqueta="Estadísticas"
+            to="/estadisticas"
+            onNavegar={onAccionCompletada}
+            reducedMotion={reducedMotion}
+          />
         </nav>
 
         <hr className="mx-1 mb-3 border-line/70" />
@@ -332,15 +407,25 @@ function SidebarContenido({
         </SeccionColapsable>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2.5 border-t border-line/70 px-4 py-3">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[12px] font-semibold text-brand">
-          {usuario ? obtenerIniciales(usuario.nombre) : '?'}
+      <div className="flex shrink-0 flex-col gap-2.5 border-t border-line/70 px-4 py-3">
+        <SegmentedControl
+          aria-label="Tema de la aplicación"
+          layoutId="tema-segmento"
+          opciones={OPCIONES_TEMA}
+          valor={preferencia}
+          onChange={setPreferencia}
+          className="self-start"
+        />
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[12px] font-semibold text-brand">
+            {usuario ? obtenerIniciales(usuario.nombre) : '?'}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-medium text-ink">{usuario?.nombre}</p>
+            <p className="truncate text-xs text-ink-3">{usuario?.email}</p>
+          </div>
+          <IconButton icon={LogOut} size="sm" aria-label="Cerrar sesión" onClick={onLogout} />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-medium text-ink">{usuario?.nombre}</p>
-          <p className="truncate text-xs text-ink-3">{usuario?.email}</p>
-        </div>
-        <IconButton icon={LogOut} size="sm" aria-label="Cerrar sesión" onClick={onLogout} />
       </div>
 
       <ConfirmDialog
@@ -362,7 +447,7 @@ export function Sidebar({ abiertoMovil, onCerrarMovil, ...contenido }: Props) {
 
   return (
     <>
-      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line/70 bg-surface/70 backdrop-blur-xl lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line/70 bg-surface/70 backdrop-blur-xl oscuro:bg-surface/80 lg:flex">
         <SidebarContenido {...contenido} onAccionCompletada={() => {}} />
       </aside>
 

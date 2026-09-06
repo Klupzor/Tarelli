@@ -181,10 +181,15 @@ Detalle completo con request/response/errores: `docs/openapi.yaml`.
   `fetch` directamente.
 - Los hooks (`useTareas`, etc.) encapsulan estado + llamadas; `completar` hace
   **update optimista con rollback** si el servidor falla.
-- Rediseño visual en curso: la especificación completa (tokens, primitivas,
-  pantalla por pantalla, criterios de aceptación) está en
-  **`docs/frontend-redesign.md`**. Si trabajas en la capa visual, ese documento
-  manda.
+- Rediseño visual: la especificación completa (tokens, primitivas, pantalla por
+  pantalla, criterios de aceptación) está en **`docs/frontend-redesign.md`**.
+  Si trabajas en la capa visual, ese documento manda.
+- Funcionalidades añadidas sobre el reto (tema claro/oscuro, dashboard de
+  estadísticas y exportación CSV/JSON) están especificadas en
+  **`docs/frontend-features.md`**, que presupone el rediseño ya aplicado.
+
+Jerarquía si dos documentos se contradicen: `CLAUDE.md` →
+`docs/frontend-features.md` → `docs/frontend-redesign.md`.
 
 ## Trampas conocidas (leer antes de depurar)
 
@@ -247,10 +252,23 @@ test con dos usuarios.
   `AppError.notFound`, ...) en vez de lanzar `Error` genéricos o construir
   respuestas de error a mano.
 
-## Fuera de alcance (definido por la especificación)
+## Alcance: reto vs. extras
 
-Roles/admin, dashboard, drag & drop, modo oscuro con selector, exportación
-CSV/JSON, atajos de teclado, WebSockets, operaciones masivas, microservicios,
-Elasticsearch, data warehouse, notificaciones, app móvil nativa y observabilidad
-avanzada (queda como recomendación futura). No implementarlos aunque parezcan
-mejoras obvias.
+**Fuera de alcance (definido por la especificación del reto).** No implementarlos
+aunque parezcan mejoras obvias: roles/admin, drag & drop, atajos de teclado,
+WebSockets, operaciones masivas, microservicios, Elasticsearch, data warehouse,
+notificaciones, app móvil nativa y observabilidad avanzada (esta última queda
+documentada como recomendación futura).
+
+**Extras añadidos deliberadamente por encima del reto.** La especificación los
+listaba como fuera de alcance; se implementan igualmente, **solo en el frontend
+y sin tocar la API**, y así deben presentarse en la entrega — como extras, no
+como parte del reto:
+
+- Toggle de tema claro / oscuro / sistema.
+- Dashboard de estadísticas personales (calculado en el cliente).
+- Exportación de tareas a CSV / JSON (generada en el cliente).
+
+Detalle completo en `docs/frontend-features.md`. **Lo que no cambia**: la lista
+de rutas sigue cerrada, el backend no se toca y estos extras no añaden
+dependencias nuevas al frontend.

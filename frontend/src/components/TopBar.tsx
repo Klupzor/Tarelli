@@ -17,7 +17,7 @@ export function TopBar({ tituloVista, total, busquedaInput, onBusquedaChange, on
   const [busquedaMovilAbierta, setBusquedaMovilAbierta] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 flex h-[68px] shrink-0 items-center gap-3 border-b border-line/60 bg-surface/60 px-4 backdrop-blur-xl md:px-6">
+    <header className="sticky top-0 z-20 flex h-[68px] shrink-0 items-center gap-3 border-b border-line/60 bg-surface/60 px-4 backdrop-blur-xl oscuro:bg-surface/80 md:px-6">
       {busquedaMovilAbierta ? (
         <div className="flex flex-1 items-center gap-2 md:hidden">
           <Input

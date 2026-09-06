@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useCategorias } from '../hooks/useCategorias';
 import { useEtiquetas } from '../hooks/useEtiquetas';
@@ -9,7 +8,7 @@ import { hoyEnZona, sumarDias } from '../utils/fechas';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { FiltersBar } from '../components/FiltersBar';
-import { TaskItem } from '../components/TaskItem';
+import { TaskGrid } from '../components/TaskGrid';
 import { TaskFormModal } from '../components/TaskFormModal';
 import { Pagination } from '../components/Pagination';
 import { EstadoCargando, EstadoError, EstadoVacio } from '../components/EstadoCarga';
@@ -208,19 +207,14 @@ export default function TasksPage() {
 
           {!cargando && !error && tareas.length > 0 && (
             <>
-              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                <AnimatePresence initial={false}>
-                  {tareas.map((tarea) => (
-                    <TaskItem
-                      key={tarea.id}
-                      tarea={tarea}
-                      onCompletar={handleCompletar}
-                      onEditar={abrirEdicion}
-                      onEliminar={handleEliminar}
-                    />
-                  ))}
-                </AnimatePresence>
-              </ul>
+              <TaskGrid
+                tareas={tareas}
+                meta={meta}
+                onCompletar={handleCompletar}
+                onEditar={abrirEdicion}
+                onEliminar={handleEliminar}
+                onNuevaTarea={abrirNuevaTarea}
+              />
               <div className="mt-4">
                 <Pagination meta={meta} onCambiarPagina={(page) => setFiltro((f) => ({ ...f, page }))} />
               </div>

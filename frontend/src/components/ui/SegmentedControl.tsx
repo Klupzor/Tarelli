@@ -5,6 +5,8 @@ import { motion, useReducedMotion } from 'motion/react';
 interface OpcionSegmentada<T extends string> {
   valor: T;
   etiqueta: string;
+  /** Color de fondo del segmento cuando está activo (por defecto `bg-surface`). */
+  colorFondoActivo?: string;
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -69,7 +71,7 @@ export function SegmentedControl<T extends string>({
             {activo && (
               <motion.span
                 layoutId={layoutId}
-                className="absolute inset-0 rounded-[6px] bg-surface shadow-xs"
+                className={`absolute inset-0 rounded-[6px] shadow-xs ${opcion.colorFondoActivo ?? 'bg-surface'}`}
                 transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
               />
             )}

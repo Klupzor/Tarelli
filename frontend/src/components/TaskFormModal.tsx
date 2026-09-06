@@ -10,6 +10,7 @@ import { Field } from './ui/Field';
 import { Input } from './ui/Input';
 import { Textarea } from './ui/Textarea';
 import { Select } from './ui/Select';
+import { SegmentedControl } from './ui/SegmentedControl';
 
 interface Props {
   abierto: boolean;
@@ -20,7 +21,11 @@ interface Props {
   onGuardar: (input: TareaInput) => Promise<void>;
 }
 
-const PRIORIDADES: Prioridad[] = ['baja', 'media', 'alta'];
+const OPCIONES_PRIORIDAD: { valor: Prioridad; etiqueta: string; colorFondoActivo: string }[] = [
+  { valor: 'baja', etiqueta: 'Baja', colorFondoActivo: 'bg-tint-baja' },
+  { valor: 'media', etiqueta: 'Media', colorFondoActivo: 'bg-tint-media' },
+  { valor: 'alta', etiqueta: 'Alta', colorFondoActivo: 'bg-tint-alta' },
+];
 
 function inputVacio(): TareaInput {
   return {
@@ -137,18 +142,16 @@ export function TaskFormModal({ abierto, tareaInicial, categorias, etiquetas, on
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Prioridad" htmlFor="tarea-prioridad">
-            <Select
-              value={form.prioridad}
-              onChange={(e) => setForm((p) => ({ ...p, prioridad: e.target.value as Prioridad }))}
-            >
-              {PRIORIDADES.map((p) => (
-                <option key={p} value={p}>
-                  {p[0].toUpperCase() + p.slice(1)}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-ink">Prioridad</span>
+            <SegmentedControl
+              aria-label="Prioridad"
+              layoutId="modal-prioridad-segmento"
+              opciones={OPCIONES_PRIORIDAD}
+              valor={form.prioridad}
+              onChange={(valor) => setForm((p) => ({ ...p, prioridad: valor }))}
+            />
+          </div>
 
           <Field label="Vence" htmlFor="tarea-vence">
             <Input

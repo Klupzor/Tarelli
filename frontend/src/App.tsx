@@ -7,6 +7,7 @@ import { ToastProvider } from './components/ui/Toast';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import TasksPage from './pages/TasksPage';
+import EstadisticasPage from './pages/EstadisticasPage';
 
 export default function App() {
   return (
@@ -37,6 +38,14 @@ export default function App() {
                   element={
                     <RutaProtegida>
                       <TasksPage />
+                    </RutaProtegida>
+                  }
+                />
+                <Route
+                  path="/estadisticas"
+                  element={
+                    <RutaProtegida>
+                      <EstadisticasPage />
                     </RutaProtegida>
                   }
                 />

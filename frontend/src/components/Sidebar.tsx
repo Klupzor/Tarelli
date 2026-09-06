@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
+  BarChart3,
   CalendarDays,
   Check,
   CheckCircle,
@@ -49,7 +51,8 @@ interface Props {
   onLogout: () => void;
   abiertoMovil: boolean;
   onCerrarMovil: () => void;
-  vistaActiva: VistaRapida;
+  /** `undefined` fuera de `/`, donde ninguna vista rápida aplica (p. ej. en /estadisticas). */
+  vistaActiva?: VistaRapida;
   onSeleccionarVista: (vista: VistaRapida) => void;
 }
 
@@ -79,7 +82,8 @@ interface ContenidoProps {
   usuario: Usuario | null;
   onLogout: () => void;
   onAccionCompletada: () => void;
-  vistaActiva: VistaRapida;
+  /** `undefined` fuera de `/`, donde ninguna vista rápida aplica (p. ej. en /estadisticas). */
+  vistaActiva?: VistaRapida;
   onSeleccionarVista: (vista: VistaRapida) => void;
 }
 
@@ -115,6 +119,45 @@ function ItemVista({
       <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
       {etiqueta}
     </button>
+  );
+}
+
+/** Igual que `ItemVista`, pero navega a una ruta real en vez de fijar un filtro local. */
+function ItemVistaEnlace({
+  icon: Icon,
+  etiqueta,
+  to,
+  onNavegar,
+  reducedMotion,
+}: {
+  icon: LucideIcon;
+  etiqueta: string;
+  to: string;
+  onNavegar: () => void;
+  reducedMotion: boolean;
+}) {
+  const location = useLocation();
+  const activo = location.pathname === to;
+
+  return (
+    <Link
+      to={to}
+      onClick={onNavegar}
+      aria-current={activo ? 'page' : undefined}
+      className={`relative flex h-9 w-full items-center gap-2 rounded-field px-2.5 text-[13.5px] font-medium transition-colors duration-120 ${
+        activo ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-surface-2/70'
+      }`}
+    >
+      {activo && (
+        <motion.span
+          layoutId="vista-activa-barra"
+          className="absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-full bg-brand"
+          transition={{ duration: reducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+        />
+      )}
+      <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+      {etiqueta}
+    </Link>
   );
 }
 
@@ -258,6 +301,13 @@ function SidebarContenido({
               reducedMotion={reducedMotion}
             />
           ))}
+          <ItemVistaEnlace
+            icon={BarChart3}
+            etiqueta="Estadísticas"
+            to="/estadisticas"
+            onNavegar={onAccionCompletada}
+            reducedMotion={reducedMotion}
+          />
         </nav>
 
         <hr className="mx-1 mb-3 border-line/70" />
